@@ -24,8 +24,8 @@ import sys
 
 def run(program, args = []):
 	args.insert(0, program)
-	proc = subprocess.run(args=args, capture_output=True, text=True)
-	return proc.stdout.split("\n")
+	proc = subprocess.run(args=args, capture_output=True)
+	return proc.stdout.decode("utf-8").split("\n")
 
 
 def get_deps(executable):
