@@ -53,7 +53,8 @@ def find_so(soname, file_format):
 	elif file_format == FILE_FORMAT_WIN64:
 		prefixes = ["/usr/x86_64-w64-mingw32/sys-root/mingw/bin/"]
 	else:
-		return None
+		print(PROGRAM_NAME + ": unknown file_format value (" + file_format + "), something is very wrong", file=sys.stderr)
+		sys.exit(1)
 
 	for prefix in prefixes:
 		path = prefix + soname
@@ -184,6 +185,22 @@ def copy_deps(deps, target_dir):
 			print(PROGRAM_NAME + ": \"" + so_name + "\" could not be copied (" + err[0] + ")")
 
 
+def print_help():
+	print(
+		PROGRAM_NAME + " is a script for bundling the .so / .dll files needed by binary executables.\n"
+		"Usage: " + PROGRAM_NAME + " EXECUTABLE [TARGET-DIR]\n"
+		"\n"
+		"EXECUTABLE can be one of the following supported formats:\n"
+		"- 32-bit ELF\n"
+		"- 64-bit ELF\n"
+		"- i386 Microsoft Windows executable\n"
+		"- x86_64 Microsoft Windows executable\n"
+		"\n"
+		"TARGET-DIR specifies the directory to copy the .so / .dll files to.\n"
+		"When omitted, defaults to the current working directory, (!)\n"
+		"not to be confused with the directory of the target executable.")
+
+
 def parse_args():
 	argc = len(sys.argv)
 	if argc < 2:
@@ -191,9 +208,7 @@ def parse_args():
 		sys.exit(1)
 
 	if sys.argv[1] == "--help":
-		print(
-			PROGRAM_NAME + " is a script for bundling the .so / .dll files needed by binary executables.\n"
-			"Usage: " + PROGRAM_NAME + " EXECUTABLE [TARGET-DIR]")
+		print_help()
 		sys.exit(0)
 
 	if sys.argv[1] == "--version":
