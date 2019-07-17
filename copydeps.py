@@ -116,7 +116,9 @@ def check_blacklist(executable, file_format):
 	if file_format in [FILE_FORMAT_ELF32, FILE_FORMAT_ELF64]:
 		blacklist = ["libasan.", "libc.", "libgcc_s.", "libm.", "libpthread.", "libstdc++.", "ld-linux.", "ld-linux-x86-64."]
 	elif file_format in [FILE_FORMAT_WIN32, FILE_FORMAT_WIN64]:
-		blacklist = ["ADVAPI32.dll", "GDI32.dll", "IMM32.dll", "KERNEL32.dll", "msvcrt.dll", "ole32.dll", "OLEAUT32.dll", "SETUPAPI.dll", "SHELL32.dll", "USER32.dll", "VERSION.dll", "WINMM.dll"]
+		blacklist = [
+			"ADVAPI32.dll", "GDI32.dll", "IMM32.dll", "KERNEL32.dll", "msvcrt.dll", "ole32.dll", "OLEAUT32.dll",
+			"SETUPAPI.dll", "SHELL32.dll", "USER32.dll", "VERSION.dll", "WINMM.dll"]
 	else:
 		print(PROGRAM_NAME + ": unknown file_format value (" + file_format + "), something is very wrong", file=sys.stderr)
 		sys.exit(1)
@@ -189,7 +191,9 @@ def parse_args():
 		sys.exit(1)
 
 	if sys.argv[1] == "--help":
-		print(PROGRAM_NAME + " is a script for bundling the .so / .dll files needed by binary executables.\nUsage: " + PROGRAM_NAME + " EXECUTABLE [TARGET-DIR]")
+		print(
+			PROGRAM_NAME + " is a script for bundling the .so / .dll files needed by binary executables.\n"
+			"Usage: " + PROGRAM_NAME + " EXECUTABLE [TARGET-DIR]")
 		sys.exit(0)
 
 	if sys.argv[1] == "--version":
