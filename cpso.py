@@ -22,6 +22,11 @@ import subprocess
 import sys
 
 
+PROGRAM_AUTHOR  = "suve"
+PROGRAM_NAME    = "cpso"
+PROGRAM_VERSION = "2.0"
+
+
 def run(program, args = []):
 	args.insert(0, program)
 	proc = subprocess.run(args=args, capture_output=True)
@@ -36,7 +41,7 @@ def run(program, args = []):
 def get_deps(executable):
 	code, output, err = run("ldd", [executable])
 	if code != 0:
-		print("cpso: \"ldd\" returned an error\n" + err[0], file=sys.stderr)
+		print(PROGRAM_NAME + ": \"ldd\" returned an error\n" + err[0], file=sys.stderr)
 		sys.exit(1)
 
 	deps = {}
@@ -70,32 +75,36 @@ def copy_deps(deps, target_dir):
 		if copy:
 			code, _, err = run("cp", ["--preserve=timestamps", so_path, target_dir])
 			if code == 0:
-				print("cpso: \"" + so_name + "\" copied from \"" + so_path + "\"")
+				print(PROGRAM_NAME + ": \"" + so_name + "\" copied from \"" + so_path + "\"")
 			else:
-				print("cpso: \"" + so_name + "\" could not be copied (" + err[0] + ")")
+				print(PROGRAM_NAME + ": \"" + so_name + "\" could not be copied (" + err[0] + ")")
 		else:
-			print("cpso: \"" + so_name + "\" is blacklisted, skipping")
+			print(PROGRAM_NAME + ": \"" + so_name + "\" is blacklisted, skipping")
 
 
 def parse_args():
 	argc = len(sys.argv)
 	if argc < 2:
-		print("cpso: EXECUTABLE is missing\nUsage: cpso EXECUTABLE [TARGET-DIR]", file=sys.stderr)
+		print(PROGRAM_NAME + ": EXECUTABLE is missing\nUsage: cpso EXECUTABLE [TARGET-DIR]", file=sys.stderr)
 		sys.exit(1)
 
 	if sys.argv[1] == "--help":
-		print("cpso is a script for bundling the .so files needed by binary executables.\nUsage: cpso EXECUTABLE [TARGET-DIR]", file=sys.stderr)
+		print(PROGRAM_NAME + " is a script for bundling the .so files needed by binary executables.\nUsage: cpso EXECUTABLE [TARGET-DIR]", file=sys.stderr)
+		sys.exit(0)
+
+	if sys.argv[1] == "--version":
+		print(PROGRAM_NAME + " v." + PROGRAM_VERSION + " by " + PROGRAM_AUTHOR, file=sys.stderr)
 		sys.exit(0)
 
 	executable = sys.argv[1]
 	if not os.path.isfile(executable):
-		print("cpso: File \"" + executable + "\" does not exist", file=sys.stderr)
+		print(PROGRAM_NAME + ": File \"" + executable + "\" does not exist", file=sys.stderr)
 		sys.exit(1)
 
 	if argc >= 3:
 		target_dir = sys.argv[2]
 		if not os.path.isdir(target_dir):
-			print("cpso: Directory \"" + target_dir + "\" does not exist", file=sys.stderr)
+			print(PROGRAM_NAME + ": Directory \"" + target_dir + "\" does not exist", file=sys.stderr)
 			sys.exit(1)
 	else:
 		target_dir = os.getcwd()
