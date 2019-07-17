@@ -38,29 +38,51 @@ def run(program, args = []):
 	return status, stdout, stderr
 
 
-def get_deps(executable):
-	code, output, err = run("ldd", [executable])
+def find_so(soname):
+	prefixes = ["/lib64/", "/usr/lib64/", "/usr/local/lib64/"]
+
+	for prefix in prefixes:
+		path = prefix + soname
+		if os.path.isfile(path):
+			return path
+
+	return None
+
+
+def get_deps_recursive(executable, deps):
+	code, output, err = run("objdump", ["-x", executable])
 	if code != 0:
-		print(PROGRAM_NAME + ": \"ldd\" returned an error\n" + err[0], file=sys.stderr)
+		print(PROGRAM_NAME + ": \"objdump\" returned an error\n" + err[0], file=sys.stderr)
 		sys.exit(1)
 
-	deps = {}
 	for line in output:
-		if not " => " in line:
+		if "  NEEDED  " not in line:
 			continue
-		
-		parts = line.split(" => ")
 
-		name = parts[0].strip()
-		target = parts[1].split(" ")[0]
+		parts = line.split(" ")
+		so_name = parts[len(parts)-1]
 
-		deps[name] = target
+		if so_name in deps:
+			continue
+
+		so_path = find_so(so_name)
+		if so_path is None:
+			print(PROGRAM_NAME + ": unable to resolve \"" + so_name + "\"", file=sys.stderr)
+			sys.exit(1)
+
+		deps[so_name] = so_path
+		get_deps_recursive(so_path, deps)
+
+
+def get_deps(executable):
+	deps = {}
+	get_deps_recursive(executable, deps)
 
 	return deps
 
 
 def copy_deps(deps, target_dir):
-	blacklist = ["libasan.", "libc.", "libgcc_s.", "libm.", "libpthread.", "libstdc++."]
+	blacklist = ["libasan.", "libc.", "libgcc_s.", "libm.", "libpthread.", "libstdc++.", "ld-linux-"]
 
 	for key, value in deps.items():
 		so_name = key
