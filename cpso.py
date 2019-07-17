@@ -84,6 +84,21 @@ def get_deps__parse_line(line, file_format):
 		return None
 
 
+def check_blacklist(executable, file_format):
+	if file_format in [FILE_FORMAT_ELF32, FILE_FORMAT_ELF64]:
+		blacklist = ["libasan.", "libc.", "libgcc_s.", "libm.", "libpthread.", "libstdc++.", "ld-linux.", "ld-linux-x86-64."]
+	elif file_format in [FILE_FORMAT_WIN32, FILE_FORMAT_WIN64]:
+		blacklist = ["ADVAPI32.dll", "GDI32.dll", "IMM32.dll", "KERNEL32.dll", "msvcrt.dll", "ole32.dll", "OLEAUT32.dll", "SETUPAPI.dll", "SHELL32.dll", "USER32.dll", "VERSION.dll", "WINMM.dll"]
+	else:
+		return False
+
+	for blackentry in blacklist:
+		if blackentry in executable:
+			return True
+
+	return False
+
+
 def get_deps_recursive(executable, deps):
 	code, output, err = run("objdump", ["-x", executable])
 	if code != 0:
@@ -124,6 +139,11 @@ def get_deps_recursive(executable, deps):
 		if so_name in deps:
 			continue
 
+		if check_blacklist(so_name, file_format):
+			deps[so_name] = None
+			print(PROGRAM_NAME + ": \"" + so_name + "\" is blacklisted, skipping")
+			continue
+
 		so_path = find_so(so_name, file_format)
 		if so_path is None:
 			print(PROGRAM_NAME + ": unable to resolve \"" + so_name + "\"", file=sys.stderr)
@@ -141,26 +161,18 @@ def get_deps(executable):
 
 
 def copy_deps(deps, target_dir):
-	blacklist = ["libasan.", "libc.", "libgcc_s.", "libm.", "libpthread.", "libstdc++.", "ld-linux.", "ld-linux-"]
-
 	for key, value in deps.items():
 		so_name = key
 		so_path = value
 
-		copy = True
-		for blackentry in blacklist:
-			if blackentry in so_name:
-				copy = False
-				break
+		if so_path is None:
+			continue
 
-		if copy:
-			code, _, err = run("cp", ["--preserve=timestamps", so_path, target_dir])
-			if code == 0:
-				print(PROGRAM_NAME + ": \"" + so_name + "\" copied from \"" + so_path + "\"")
-			else:
-				print(PROGRAM_NAME + ": \"" + so_name + "\" could not be copied (" + err[0] + ")")
+		code, _, err = run("cp", ["--preserve=timestamps", so_path, target_dir])
+		if code == 0:
+			print(PROGRAM_NAME + ": \"" + so_name + "\" copied from \"" + so_path + "\"")
 		else:
-			print(PROGRAM_NAME + ": \"" + so_name + "\" is blacklisted, skipping")
+			print(PROGRAM_NAME + ": \"" + so_name + "\" could not be copied (" + err[0] + ")")
 
 
 def parse_args():
