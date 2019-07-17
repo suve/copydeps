@@ -26,8 +26,10 @@ PROGRAM_AUTHOR  = "suve"
 PROGRAM_NAME    = "cpso"
 PROGRAM_VERSION = "2.0"
 
-FILE_FORMAT_ELF32 = 0
-FILE_FORMAT_ELF64 = 1
+FILE_FORMAT_ELF32 = 10
+FILE_FORMAT_ELF64 = 11
+FILE_FORMAT_WIN32 = 20
+FILE_FORMAT_WIN64 = 21
 
 
 def run(program, args = []):
@@ -46,6 +48,10 @@ def find_so(soname, file_format):
 		prefixes = ["/lib/", "/usr/lib/", "/usr/local/lib/"]
 	elif file_format == FILE_FORMAT_ELF64:
 		prefixes = ["/lib64/", "/usr/lib64/", "/usr/local/lib64/"]
+	elif file_format == FILE_FORMAT_WIN32:
+		prefixes = ["/usr/i686-w64-mingw32/sys-root/mingw/bin/"]
+	elif file_format == FILE_FORMAT_WIN64:
+		prefixes = ["/usr/x86_64-w64-mingw32/sys-root/mingw/bin/"]
 	else:
 		return None
 
@@ -55,6 +61,27 @@ def find_so(soname, file_format):
 			return path
 
 	return None
+
+
+def get_deps__parse_line(line, file_format):
+	if file_format in [FILE_FORMAT_ELF32, FILE_FORMAT_ELF64]:
+		if "  NEEDED  " not in line:
+			return None
+
+		parts = line.split(" ")
+		so_name = parts[len(parts)-1].strip()
+
+		return so_name
+	elif file_format in [FILE_FORMAT_WIN32, FILE_FORMAT_WIN64]:
+		if "\tDLL Name: " not in line:
+			return None
+
+		parts = line.split("\tDLL Name: ")
+		so_name = parts[1].strip()
+
+		return so_name
+	else:
+		return None
 
 
 def get_deps_recursive(executable, deps):
@@ -72,12 +99,16 @@ def get_deps_recursive(executable, deps):
 			continue
 
 		parts = line.split(" file format ")
-		format_str = parts[1]
+		format_str = parts[1].strip()
 
 		if format_str[:6] == "elf32-":
 			file_format = FILE_FORMAT_ELF32
 		elif format_str[:6] == "elf64-":
 			file_format = FILE_FORMAT_ELF64
+		elif format_str == "pei-i386":
+			file_format = FILE_FORMAT_WIN32
+		elif format_str == "pei-x86-64":
+			file_format = FILE_FORMAT_WIN64
 		else:
 			print(PROGRAM_NAME + ": unrecognized file format \"" + format_str + "\" (file: \"" + executable + "\")", file=sys.stderr)
 			sys.exit(1)
@@ -87,12 +118,9 @@ def get_deps_recursive(executable, deps):
 		sys.exit(1)
 
 	for line in output:
-		if "  NEEDED  " not in line:
+		so_name = get_deps__parse_line(line, file_format)
+		if so_name is None:
 			continue
-
-		parts = line.split(" ")
-		so_name = parts[len(parts)-1]
-
 		if so_name in deps:
 			continue
 
