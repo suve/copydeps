@@ -63,6 +63,33 @@ def find_so(soname, file_format):
 	return None
 
 
+def get_deps__parse_header(executable, header):
+	file_format = None
+	for line in header:
+		if " file format " not in line:
+			continue
+
+		parts = line.split(" file format ")
+		format_str = parts[1].strip()
+
+		if format_str[:6] == "elf32-":
+			return FILE_FORMAT_ELF32
+		if format_str[:6] == "elf64-":
+			return FILE_FORMAT_ELF64
+
+		if format_str == "pei-i386":
+			return FILE_FORMAT_WIN32
+		if format_str == "pei-x86-64":
+			return FILE_FORMAT_WIN64
+
+		print(PROGRAM_NAME + ": unrecognized file format \"" + format_str + "\" (file: \"" + executable + "\")", file=sys.stderr)
+		sys.exit(1)
+
+	if file_format is None:
+		print(PROGRAM_NAME + ": could not determine file format for \"" + executable + "\"", file=sys.stderr)
+		sys.exit(1)
+
+
 def get_deps__parse_line(line, file_format):
 	if file_format in [FILE_FORMAT_ELF32, FILE_FORMAT_ELF64]:
 		if "  NEEDED  " not in line:
@@ -81,7 +108,8 @@ def get_deps__parse_line(line, file_format):
 
 		return so_name
 	else:
-		return None
+		print(PROGRAM_NAME + ": unknown file_format value (" + file_format + "), something is very wrong", file=sys.stderr)
+		sys.exit(1)
 
 
 def check_blacklist(executable, file_format):
@@ -90,7 +118,8 @@ def check_blacklist(executable, file_format):
 	elif file_format in [FILE_FORMAT_WIN32, FILE_FORMAT_WIN64]:
 		blacklist = ["ADVAPI32.dll", "GDI32.dll", "IMM32.dll", "KERNEL32.dll", "msvcrt.dll", "ole32.dll", "OLEAUT32.dll", "SETUPAPI.dll", "SHELL32.dll", "USER32.dll", "VERSION.dll", "WINMM.dll"]
 	else:
-		return False
+		print(PROGRAM_NAME + ": unknown file_format value (" + file_format + "), something is very wrong", file=sys.stderr)
+		sys.exit(1)
 
 	for blackentry in blacklist:
 		if blackentry in executable:
@@ -108,29 +137,7 @@ def get_deps_recursive(executable, deps):
 	header = output[:5]
 	output = output[5:]
 
-	file_format = None
-	for line in header:
-		if " file format " not in line:
-			continue
-
-		parts = line.split(" file format ")
-		format_str = parts[1].strip()
-
-		if format_str[:6] == "elf32-":
-			file_format = FILE_FORMAT_ELF32
-		elif format_str[:6] == "elf64-":
-			file_format = FILE_FORMAT_ELF64
-		elif format_str == "pei-i386":
-			file_format = FILE_FORMAT_WIN32
-		elif format_str == "pei-x86-64":
-			file_format = FILE_FORMAT_WIN64
-		else:
-			print(PROGRAM_NAME + ": unrecognized file format \"" + format_str + "\" (file: \"" + executable + "\")", file=sys.stderr)
-			sys.exit(1)
-
-	if file_format is None:
-		print(PROGRAM_NAME + ": could not determine file format for \"" + executable + "\"", file=sys.stderr)
-		sys.exit(1)
+	file_format = get_deps__parse_header(executable, header)
 
 	for line in output:
 		so_name = get_deps__parse_line(line, file_format)
