@@ -114,8 +114,10 @@ def get_deps__parse_line(line, file_format):
 
 
 def check_blacklist(executable, file_format):
-	if file_format in [FILE_FORMAT_ELF32, FILE_FORMAT_ELF64]:
-		blacklist = ["libasan.", "libc.", "libgcc_s.", "libm.", "libpthread.", "libstdc++.", "ld-linux.", "ld-linux-x86-64."]
+	if file_format == FILE_FORMAT_ELF32:
+		blacklist = ["ld-linux."]
+	elif file_format == FILE_FORMAT_ELF64:
+		blacklist = ["ld-linux-x86-64."]
 	elif file_format in [FILE_FORMAT_WIN32, FILE_FORMAT_WIN64]:
 		blacklist = [
 			"ADVAPI32.dll", "GDI32.dll", "IMM32.dll", "KERNEL32.dll", "msvcrt.dll", "ole32.dll", "OLEAUT32.dll",
