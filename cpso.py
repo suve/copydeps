@@ -26,6 +26,9 @@ PROGRAM_AUTHOR  = "suve"
 PROGRAM_NAME    = "cpso"
 PROGRAM_VERSION = "2.0"
 
+FILE_FORMAT_ELF32 = 0
+FILE_FORMAT_ELF64 = 1
+
 
 def run(program, args = []):
 	args.insert(0, program)
@@ -38,8 +41,13 @@ def run(program, args = []):
 	return status, stdout, stderr
 
 
-def find_so(soname):
-	prefixes = ["/lib64/", "/usr/lib64/", "/usr/local/lib64/"]
+def find_so(soname, file_format):
+	if file_format == FILE_FORMAT_ELF32:
+		prefixes = ["/lib/", "/usr/lib/", "/usr/local/lib/"]
+	elif file_format == FILE_FORMAT_ELF64:
+		prefixes = ["/lib64/", "/usr/lib64/", "/usr/local/lib64/"]
+	else:
+		return None
 
 	for prefix in prefixes:
 		path = prefix + soname
@@ -55,6 +63,29 @@ def get_deps_recursive(executable, deps):
 		print(PROGRAM_NAME + ": \"objdump\" returned an error\n" + err[0], file=sys.stderr)
 		sys.exit(1)
 
+	header = output[:5]
+	output = output[5:]
+
+	file_format = None
+	for line in header:
+		if " file format " not in line:
+			continue
+
+		parts = line.split(" file format ")
+		format_str = parts[1]
+
+		if format_str[:6] == "elf32-":
+			file_format = FILE_FORMAT_ELF32
+		elif format_str[:6] == "elf64-":
+			file_format = FILE_FORMAT_ELF64
+		else:
+			print(PROGRAM_NAME + ": unrecognized file format \"" + format_str + "\" (file: \"" + executable + "\")", file=sys.stderr)
+			sys.exit(1)
+
+	if file_format is None:
+		print(PROGRAM_NAME + ": could not determine file format for \"" + executable + "\"", file=sys.stderr)
+		sys.exit(1)
+
 	for line in output:
 		if "  NEEDED  " not in line:
 			continue
@@ -65,7 +96,7 @@ def get_deps_recursive(executable, deps):
 		if so_name in deps:
 			continue
 
-		so_path = find_so(so_name)
+		so_path = find_so(so_name, file_format)
 		if so_path is None:
 			print(PROGRAM_NAME + ": unable to resolve \"" + so_name + "\"", file=sys.stderr)
 			sys.exit(1)
@@ -82,7 +113,7 @@ def get_deps(executable):
 
 
 def copy_deps(deps, target_dir):
-	blacklist = ["libasan.", "libc.", "libgcc_s.", "libm.", "libpthread.", "libstdc++.", "ld-linux-"]
+	blacklist = ["libasan.", "libc.", "libgcc_s.", "libm.", "libpthread.", "libstdc++.", "ld-linux.", "ld-linux-"]
 
 	for key, value in deps.items():
 		so_name = key
