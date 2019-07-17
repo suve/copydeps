@@ -25,11 +25,19 @@ import sys
 def run(program, args = []):
 	args.insert(0, program)
 	proc = subprocess.run(args=args, capture_output=True)
-	return proc.stdout.decode("utf-8").split("\n")
+
+	status = proc.returncode
+	stdout = proc.stdout.decode("utf-8").split("\n")
+	stderr = proc.stderr.decode("utf-8").split("\n")
+
+	return status, stdout, stderr
 
 
 def get_deps(executable):
-	output = run("ldd", [executable])
+	code, output, err = run("ldd", [executable])
+	if code != 0:
+		print("cpso: \"ldd\" returned an error\n" + err[0], file=sys.stderr)
+		sys.exit(1)
 
 	deps = {}
 	for line in output:
@@ -60,8 +68,11 @@ def copy_deps(deps, target_dir):
 				break
 
 		if copy:
-			run("cp", ["--preserve=timestamps", so_path, target_dir])
-			print("cpso: \"" + so_name + "\" copied from \"" + so_path + "\"")
+			code, _, err = run("cp", ["--preserve=timestamps", so_path, target_dir])
+			if code == 0:
+				print("cpso: \"" + so_name + "\" copied from \"" + so_path + "\"")
+			else:
+				print("cpso: \"" + so_name + "\" could not be copied (" + err[0] + ")")
 		else:
 			print("cpso: \"" + so_name + "\" is blacklisted, skipping")
 
