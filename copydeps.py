@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 #
-# cpso.py - copy program's dependencies (.so files)
+# copydeps - copy a program's dependencies (.so / .dll files)
 # Copyright (C) 2017, 2019 Artur "suve" Iwicki
 #
 # This program is free software: you can redistribute it and/or modify
@@ -23,7 +23,7 @@ import sys
 
 
 PROGRAM_AUTHOR  = "suve"
-PROGRAM_NAME    = "cpso"
+PROGRAM_NAME    = "copydeps"
 PROGRAM_VERSION = "2.0"
 
 FILE_FORMAT_ELF32 = 10
@@ -178,11 +178,11 @@ def copy_deps(deps, target_dir):
 def parse_args():
 	argc = len(sys.argv)
 	if argc < 2:
-		print(PROGRAM_NAME + ": EXECUTABLE is missing\nUsage: cpso EXECUTABLE [TARGET-DIR]", file=sys.stderr)
+		print(PROGRAM_NAME + ": EXECUTABLE is missing\nUsage: " + PROGRAM_NAME + " EXECUTABLE [TARGET-DIR]", file=sys.stderr)
 		sys.exit(1)
 
 	if sys.argv[1] == "--help":
-		print(PROGRAM_NAME + " is a script for bundling the .so files needed by binary executables.\nUsage: cpso EXECUTABLE [TARGET-DIR]", file=sys.stderr)
+		print(PROGRAM_NAME + " is a script for bundling the .so / .dll files needed by binary executables.\nUsage: " + PROGRAM_NAME + " EXECUTABLE [TARGET-DIR]", file=sys.stderr)
 		sys.exit(0)
 
 	if sys.argv[1] == "--version":
