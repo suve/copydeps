@@ -189,11 +189,11 @@ def parse_args():
 		sys.exit(1)
 
 	if sys.argv[1] == "--help":
-		print(PROGRAM_NAME + " is a script for bundling the .so / .dll files needed by binary executables.\nUsage: " + PROGRAM_NAME + " EXECUTABLE [TARGET-DIR]", file=sys.stderr)
+		print(PROGRAM_NAME + " is a script for bundling the .so / .dll files needed by binary executables.\nUsage: " + PROGRAM_NAME + " EXECUTABLE [TARGET-DIR]")
 		sys.exit(0)
 
 	if sys.argv[1] == "--version":
-		print(PROGRAM_NAME + " v." + PROGRAM_VERSION + " by " + PROGRAM_AUTHOR, file=sys.stderr)
+		print(PROGRAM_NAME + " v." + PROGRAM_VERSION + " by " + PROGRAM_AUTHOR)
 		sys.exit(0)
 
 	executable = sys.argv[1]
