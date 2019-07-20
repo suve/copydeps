@@ -1,0 +1,47 @@
+.TH COPYDEPS 1 "2019-07-20" "" "User Commands Manual"
+.
+.SH NAME
+.B copydeps
+\- copy a program's dependencies (.so / .dll files)
+.
+.SH SYNOPSIS
+.SY copydeps
+.I EXECUTABLE
+[\fITARGET-DIR\fR]
+.YS
+.
+.SH DESCRIPTION
+.B copydeps
+is a small script that can be used to find and copy all
+\fB.so\fR / \fB.dll\fR files needed by a program to run.
+This can be useful when you want to bundle an application
+together will all its dependencies.
+
+.I EXECUTABLE
+can be one of the following supported formats:
+.br
+\(bu 32-bit ELF
+.br
+\(bu 64-bit ELF
+.br
+\(bu i386 Microsoft Windows executable
+.br
+\(bu x86_64 Microsoft Windows executable
+
+.I TARGET-DIR
+specifies the directory to copy the \fB.so\fR / \fB.dll\fR files to.
+When omitted, defaults to the
+.B (!)
+.I current working directory
+- not to be confused with the directory of the target executable.
+.
+.SH OPTIONS
+.TP
+.B \-\-help
+Print a short help message and exit.
+.TP
+.B \-\-version
+Print version information and exit.
+.
+.SH SEE ALSO
+ldd(1), objdump(1)
