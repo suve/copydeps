@@ -121,7 +121,7 @@ def check_blacklist(executable, file_format):
 	elif file_format in [FILE_FORMAT_WIN32, FILE_FORMAT_WIN64]:
 		blacklist = [
 			"ADVAPI32.dll", "GDI32.dll", "IMM32.dll", "KERNEL32.dll", "msvcrt.dll", "ole32.dll", "OLEAUT32.dll",
-			"SETUPAPI.dll", "SHELL32.dll", "USER32.dll", "VERSION.dll", "WINMM.dll"]
+			"SETUPAPI.dll", "SHELL32.dll", "USER32.dll", "VERSION.dll", "WINMM.dll", "WS2_32.dll"]
 	else:
 		print(PROGRAM_NAME + ": unknown file_format value (" + file_format + "), something is very wrong", file=sys.stderr)
 		sys.exit(1)
