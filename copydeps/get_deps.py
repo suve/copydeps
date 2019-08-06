@@ -129,7 +129,7 @@ def get_deps__parse_line(line, file_format):
 		sys.exit(1)
 
 
-def get_deps_recursive(executable, deps):
+def get_deps_recursive(executable, deplist):
 	code, output, err = run("objdump", ["-x", executable])
 	if code != 0:
 		print(PROGRAM_NAME + ": \"objdump\" returned an error\n" + err[0], file=sys.stderr)
@@ -144,25 +144,18 @@ def get_deps_recursive(executable, deps):
 		so_name = get_deps__parse_line(line, file_format)
 		if so_name is None:
 			continue
-		if so_name in deps:
+		if so_name in deplist:
 			continue
 
 		dep = Dependency(so_name, file_format)
-		if dep.isBlacklisted:
-			deps[so_name] = None
-			print(PROGRAM_NAME + ": \"" + so_name + "\" is blacklisted, skipping")
-			continue
+		deplist[so_name] = dep
 
-		so_path = dep.resolve()
-		if so_path is None:
-			print(PROGRAM_NAME + ": unable to resolve \"" + so_name + "\"", file=sys.stderr)
-			sys.exit(1)
-
-		deps[so_name] = so_path
-		get_deps_recursive(so_path, deps)
+		if not dep.isBlacklisted:
+			dep.resolve()
+			get_deps_recursive(dep.path, deplist)
 
 
 def get_deps(executable):
 	deps = {}
 	get_deps_recursive(executable, deps)
-	return deps
+	return deps.values()

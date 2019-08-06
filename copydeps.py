@@ -26,25 +26,32 @@ from copydeps.settings import parse_args
 from copydeps.version import PROGRAM_NAME
 
 
-def copy_deps(deps, target_dir):
-	for key, value in deps.items():
-		so_name = key
-		so_path = value
-
-		if so_path is None:
+def copy_deps(deplist, target_dir):
+	for dep in deplist:
+		if dep.isBlacklisted:
+			print(PROGRAM_NAME + ": \"" + dep.name + "\" is blacklisted, skipping")
 			continue
 
-		code, _, err = run("cp", ["--preserve=timestamps", so_path, target_dir])
+		if dep.path is None:
+			print(PROGRAM_NAME + ": unable to resolve \"" + dep.name + "\"")
+			continue
+
+		code, _, err = run("cp", ["--preserve=timestamps", dep.path, target_dir])
 		if code == 0:
-			print(PROGRAM_NAME + ": \"" + so_name + "\" copied from \"" + so_path + "\"")
+			print(PROGRAM_NAME + ": \"" + dep.name + "\" copied from \"" + dep.path + "\"")
 		else:
-			print(PROGRAM_NAME + ": \"" + so_name + "\" could not be copied (" + err[0] + ")")
+			print(PROGRAM_NAME + ": \"" + dep.name + "\" could not be copied (" + err[0] + ")")
 
 
 def main():
 	executable, target_dir = parse_args()
 	deps = get_deps(executable)
 	copy_deps(deps, target_dir)
+
+	# Exit successfully only if all dependencies were resolved and copied
+	for dep in deps:
+		if (not dep.isBlacklisted) and (dep.path is None):
+			sys.exit(1)
 
 
 if __name__ == "__main__":
