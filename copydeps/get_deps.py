@@ -22,6 +22,7 @@ import os
 import sys
 
 from copydeps.run_program import run
+from copydeps.settings import settings
 from copydeps.version import PROGRAM_NAME
 
 
@@ -62,6 +63,9 @@ class Dependency:
 			prefixes = ["/usr/x86_64-w64-mingw32/sys-root/mingw/bin/"]
 		else:
 			prefixes = []
+
+		if settings.exedir:
+			prefixes.insert(0, os.path.dirname(settings.executable) + "/")
 
 		for prefix in prefixes:
 			path = prefix + self.name

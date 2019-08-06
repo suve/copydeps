@@ -42,7 +42,7 @@ def copy_deps(deplist, target_dir):
 	for dep in deplist:
 		if dep.isBlacklisted:
 			if settings.verbose:
-				print("\"" + dep.name + "\" is blacklisted, skipping")
+				print("\"" + dep.name + "\": blacklisted, skipping")
 			continue
 
 		if dep.path is None:
@@ -50,11 +50,16 @@ def copy_deps(deplist, target_dir):
 			all_ok = False
 			continue
 
-		code, _, err = run("cp", ["--preserve=timestamps", dep.path, target_dir])
+		target_path = os.path.abspath(target_dir + "/" + dep.name)
+		if os.path.samefile(dep.path, target_path):
+			if settings.verbose:
+				print("\"" + dep.name + "\": preferred version already present in the target directory")
+			continue
+
+		code, _, err = run("cp", ["--preserve=timestamps", dep.path, target_path])
 		if code == 0:
 			if settings.verbose:
-				final_path = os.path.abspath(target_dir + "/" + dep.name)
-				print("\"" + dep.name + "\": " + dep.path + " -> " + final_path)
+				print("\"" + dep.name + "\": " + dep.path + " -> " + target_path)
 		else:
 			print(PROGRAM_NAME + ": \"" + dep.name + "\" could not be copied (" + err[0] + ")", file=sys.stderr)
 			all_ok = False
