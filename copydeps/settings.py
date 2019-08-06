@@ -17,6 +17,7 @@
 # this program (LICENCE.txt). If not, see <https://www.gnu.org/licenses/>.
 #
 
+import argparse
 import os
 import sys
 
@@ -26,45 +27,45 @@ executable = None
 target_dir = None
 
 
-def print_help():
-	print(
-		PROGRAM_NAME + " is a script for bundling the .so / .dll files needed by binary executables.\n"
-		"Usage: " + PROGRAM_NAME + " EXECUTABLE [TARGET-DIR]\n"
-		"\n"
-		"EXECUTABLE can be one of the following supported formats:\n"
-		"- 32-bit ELF\n"
-		"- 64-bit ELF\n"
-		"- i386 Microsoft Windows executable\n"
-		"- x86_64 Microsoft Windows executable\n"
-		"\n"
-		"TARGET-DIR specifies the directory to copy the .so / .dll files to.\n"
-		"When omitted, defaults to the current working directory, (!)\n"
-		"not to be confused with the directory of the target executable.")
+class HelpAction(argparse.Action):
+	def __call__(self, parser, namespace, values, option_string=None):
+		print(
+			PROGRAM_NAME + " is a script for bundling the .so / .dll files needed by binary executables.\n"
+			"Usage: " + PROGRAM_NAME + " EXECUTABLE [TARGET-DIR]\n"
+			"\n"
+			"EXECUTABLE can be one of the following supported formats:\n"
+			"- 32-bit ELF\n"
+			"- 64-bit ELF\n"
+			"- i386 Microsoft Windows executable\n"
+			"- x86_64 Microsoft Windows executable\n"
+			"\n"
+			"TARGET-DIR specifies the directory to copy the .so / .dll files to.\n"
+			"When omitted, defaults to the current working directory, (!)\n"
+			"not to be confused with the directory of the target executable.")
+		sys.exit(0)
 
 
 def parse_args():
 	global executable, target_dir
 
-	argc = len(sys.argv)
-	if argc < 2:
-		print(PROGRAM_NAME + ": EXECUTABLE is missing\nUsage: " + PROGRAM_NAME + " EXECUTABLE [TARGET-DIR]", file=sys.stderr)
-		sys.exit(1)
+	parser = argparse.ArgumentParser(prog="copydeps", add_help=False)
+	parser.add_argument('EXECUTABLE', type=str, nargs=1)
+	parser.add_argument('TARGET-DIR', type=str, nargs="?", default=None)
 
-	if sys.argv[1] == "--help":
-		print_help()
-		sys.exit(0)
+	parser.add_argument("--help", nargs=0, action=HelpAction)
+	parser.add_argument(
+		"--version", action="version", version=(PROGRAM_NAME + " v." + PROGRAM_VERSION + " by " + PROGRAM_AUTHOR))
 
-	if sys.argv[1] == "--version":
-		print(PROGRAM_NAME + " v." + PROGRAM_VERSION + " by " + PROGRAM_AUTHOR)
-		sys.exit(0)
+	args = parser.parse_args()
+	args = vars(args)
 
-	executable = sys.argv[1]
+	executable = args["EXECUTABLE"][0]
 	if not os.path.isfile(executable):
 		print(PROGRAM_NAME + ": File \"" + executable + "\" does not exist", file=sys.stderr)
 		sys.exit(1)
 
-	if argc >= 3:
-		target_dir = sys.argv[2]
+	target_dir = args["TARGET-DIR"]
+	if target_dir is not None:
 		if not os.path.isdir(target_dir):
 			print(PROGRAM_NAME + ": Directory \"" + target_dir + "\" does not exist", file=sys.stderr)
 			sys.exit(1)
