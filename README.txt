@@ -12,8 +12,7 @@ Usage: copydeps EXECUTABLE [TARGET-DIR]
   - x86_64 Microsoft Windows executable
   
   TARGET-DIR specifies the directory to copy the .so / .dll files to.
-  When omitted, defaults to the current working directory, (!)
-  not to be confused with the directory of the target executable.
+  When omitted, defaults to the directory of the target executable.
 
 Dependencies:
 - cp

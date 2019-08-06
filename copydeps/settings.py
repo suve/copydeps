@@ -40,8 +40,7 @@ class HelpAction(argparse.Action):
 			"- x86_64 Microsoft Windows executable\n"
 			"\n"
 			"TARGET-DIR specifies the directory to copy the .so / .dll files to.\n"
-			"When omitted, defaults to the current working directory, (!)\n"
-			"not to be confused with the directory of the target executable.")
+			"When omitted, defaults to the directory of the target executable.")
 		sys.exit(0)
 
 
@@ -70,7 +69,7 @@ def parse_args():
 			print(PROGRAM_NAME + ": Directory \"" + target_dir + "\" does not exist", file=sys.stderr)
 			sys.exit(1)
 	else:
-		target_dir = os.getcwd()
+		target_dir = os.path.dirname(os.path.abspath(executable))
 	target_dir = target_dir + "/"
 
 	return executable, target_dir
