@@ -22,8 +22,18 @@ import sys
 
 from copydeps.get_deps import get_deps
 from copydeps.run_program import run
-from copydeps.settings import parse_args
+from copydeps.settings import settings, parse_args
 from copydeps.version import PROGRAM_NAME
+
+
+def print_deps(deplist):
+	for dep in deplist:
+		if dep.isBlacklisted:
+			print("\"" + dep.name + "\" -> (blacklisted)")
+		elif dep.path is None:
+			print("\"" + dep.name + "\" -> (unable to resolve)")
+		else:
+			print("\"" + dep.name + "\" -> \"" + dep.path + "\"")
 
 
 def copy_deps(deplist, target_dir):
@@ -46,7 +56,11 @@ def copy_deps(deplist, target_dir):
 def main():
 	executable, target_dir = parse_args()
 	deps = get_deps(executable)
-	copy_deps(deps, target_dir)
+
+	if settings.dry_run:
+		print_deps(deps)
+	else:
+		copy_deps(deps, target_dir)
 
 	# Exit successfully only if all dependencies were resolved and copied
 	for dep in deps:

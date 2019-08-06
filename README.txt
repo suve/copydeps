@@ -1,6 +1,6 @@
 copydeps - copy a program's dependencies (.so / .dll files)
 
-copydeps is a small script that can be used to find and copy all .so / .dll
+copydeps is a small program that can be used to find and copy all .so / .dll
 files needed by a program to run. This can be useful when you want to bundle
 an application together will all its dependencies.
 
@@ -13,6 +13,11 @@ Usage: copydeps EXECUTABLE [TARGET-DIR]
   
   TARGET-DIR specifies the directory to copy the .so / .dll files to.
   When omitted, defaults to the directory of the target executable.
+
+Program options:
+--dry-run
+  Print the list of dependencies without actually copying the .so / .dll files.
+
 
 Dependencies:
 - cp

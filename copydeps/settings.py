@@ -23,15 +23,12 @@ import sys
 
 from copydeps.version import PROGRAM_AUTHOR, PROGRAM_NAME, PROGRAM_VERSION
 
-executable = None
-target_dir = None
-
 
 class HelpAction(argparse.Action):
 	def __call__(self, parser, namespace, values, option_string=None):
 		print(
 			PROGRAM_NAME + " is a script for bundling the .so / .dll files needed by binary executables.\n"
-			"Usage: " + PROGRAM_NAME + " EXECUTABLE [TARGET-DIR]\n"
+			"Usage: " + PROGRAM_NAME + " [--dry-run] EXECUTABLE [TARGET-DIR]\n"
 			"\n"
 			"EXECUTABLE can be one of the following supported formats:\n"
 			"- 32-bit ELF\n"
@@ -40,36 +37,59 @@ class HelpAction(argparse.Action):
 			"- x86_64 Microsoft Windows executable\n"
 			"\n"
 			"TARGET-DIR specifies the directory to copy the .so / .dll files to.\n"
-			"When omitted, defaults to the directory of the target executable.")
+			"When omitted, defaults to the directory of the target executable.\n"
+			"\n"
+			"Program options:\n"
+			"--dry-run\n"
+			"  Print the list of dependencies without actually copying the .so / .dll files.")
 		sys.exit(0)
 
 
-def parse_args():
-	global executable, target_dir
+class Settings:
+	dry_run = None
+	executable = None
+	target_dir = None
 
-	parser = argparse.ArgumentParser(prog="copydeps", add_help=False)
-	parser.add_argument('EXECUTABLE', type=str, nargs=1)
-	parser.add_argument('TARGET-DIR', type=str, nargs="?", default=None)
+	def __parse__(self):
+		parser = argparse.ArgumentParser(prog="copydeps", add_help=False)
+		parser.add_argument('EXECUTABLE', type=str, nargs=1)
+		parser.add_argument('TARGET-DIR', type=str, nargs="?", default=None)
 
-	parser.add_argument("--help", nargs=0, action=HelpAction)
-	parser.add_argument(
-		"--version", action="version", version=(PROGRAM_NAME + " v." + PROGRAM_VERSION + " by " + PROGRAM_AUTHOR))
+		parser.add_argument("--dry-run", action="count", default=0)
 
-	args = parser.parse_args()
-	args = vars(args)
+		parser.add_argument("--help", nargs=0, action=HelpAction)
+		parser.add_argument(
+			"--version", action="version", version=(PROGRAM_NAME + " v." + PROGRAM_VERSION + " by " + PROGRAM_AUTHOR))
 
-	executable = args["EXECUTABLE"][0]
-	if not os.path.isfile(executable):
-		print(PROGRAM_NAME + ": File \"" + executable + "\" does not exist", file=sys.stderr)
-		sys.exit(1)
+		args = parser.parse_args()
+		args = vars(args)
 
-	target_dir = args["TARGET-DIR"]
-	if target_dir is not None:
-		if not os.path.isdir(target_dir):
-			print(PROGRAM_NAME + ": Directory \"" + target_dir + "\" does not exist", file=sys.stderr)
+		executable = args["EXECUTABLE"][0]
+		if not os.path.isfile(executable):
+			print(PROGRAM_NAME + ": File \"" + executable + "\" does not exist", file=sys.stderr)
 			sys.exit(1)
-	else:
-		target_dir = os.path.dirname(os.path.abspath(executable))
-	target_dir = target_dir + "/"
 
-	return executable, target_dir
+		target_dir = args["TARGET-DIR"]
+		if target_dir is not None:
+			if not os.path.isdir(target_dir):
+				print(PROGRAM_NAME + ": Directory \"" + target_dir + "\" does not exist", file=sys.stderr)
+				sys.exit(1)
+		else:
+			target_dir = os.path.dirname(os.path.abspath(executable))
+		target_dir = target_dir + "/"
+
+		dry_run = args["dry_run"] > 0
+
+		self.dry_run = dry_run
+		self.executable = executable
+		self.target_dir = target_dir
+
+
+settings = Settings()
+
+
+def parse_args():
+	global settings
+	settings.__parse__()
+
+	return settings.executable, settings.target_dir
