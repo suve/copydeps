@@ -18,9 +18,9 @@
 #
 
 import os
-import subprocess
 import sys
 
+from copydeps.run_program import run
 from copydeps.settings import parse_args
 from copydeps.version import PROGRAM_NAME
 
@@ -28,21 +28,6 @@ FILE_FORMAT_ELF32 = 10
 FILE_FORMAT_ELF64 = 11
 FILE_FORMAT_WIN32 = 20
 FILE_FORMAT_WIN64 = 21
-
-
-def run(program, args=None):
-	if args is None:
-		args = [program]
-	else:
-		args.insert(0, program)
-
-	proc = subprocess.run(args=args, capture_output=True)
-
-	status = proc.returncode
-	stdout = proc.stdout.decode("utf-8").split("\n")
-	stderr = proc.stderr.decode("utf-8").split("\n")
-
-	return status, stdout, stderr
 
 
 def find_so(soname, file_format):
