@@ -21,7 +21,8 @@ import os
 import subprocess
 import sys
 
-from copydeps.version import PROGRAM_AUTHOR, PROGRAM_NAME, PROGRAM_VERSION
+from copydeps.settings import parse_args
+from copydeps.version import PROGRAM_NAME
 
 FILE_FORMAT_ELF32 = 10
 FILE_FORMAT_ELF64 = 11
@@ -186,53 +187,6 @@ def copy_deps(deps, target_dir):
 			print(PROGRAM_NAME + ": \"" + so_name + "\" copied from \"" + so_path + "\"")
 		else:
 			print(PROGRAM_NAME + ": \"" + so_name + "\" could not be copied (" + err[0] + ")")
-
-
-def print_help():
-	print(
-		PROGRAM_NAME + " is a script for bundling the .so / .dll files needed by binary executables.\n"
-		"Usage: " + PROGRAM_NAME + " EXECUTABLE [TARGET-DIR]\n"
-		"\n"
-		"EXECUTABLE can be one of the following supported formats:\n"
-		"- 32-bit ELF\n"
-		"- 64-bit ELF\n"
-		"- i386 Microsoft Windows executable\n"
-		"- x86_64 Microsoft Windows executable\n"
-		"\n"
-		"TARGET-DIR specifies the directory to copy the .so / .dll files to.\n"
-		"When omitted, defaults to the current working directory, (!)\n"
-		"not to be confused with the directory of the target executable.")
-
-
-def parse_args():
-	argc = len(sys.argv)
-	if argc < 2:
-		print(PROGRAM_NAME + ": EXECUTABLE is missing\nUsage: " + PROGRAM_NAME + " EXECUTABLE [TARGET-DIR]", file=sys.stderr)
-		sys.exit(1)
-
-	if sys.argv[1] == "--help":
-		print_help()
-		sys.exit(0)
-
-	if sys.argv[1] == "--version":
-		print(PROGRAM_NAME + " v." + PROGRAM_VERSION + " by " + PROGRAM_AUTHOR)
-		sys.exit(0)
-
-	executable = sys.argv[1]
-	if not os.path.isfile(executable):
-		print(PROGRAM_NAME + ": File \"" + executable + "\" does not exist", file=sys.stderr)
-		sys.exit(1)
-
-	if argc >= 3:
-		target_dir = sys.argv[2]
-		if not os.path.isdir(target_dir):
-			print(PROGRAM_NAME + ": Directory \"" + target_dir + "\" does not exist", file=sys.stderr)
-			sys.exit(1)
-	else:
-		target_dir = os.getcwd()
-	target_dir = target_dir + "/"
-
-	return executable, target_dir
 
 
 def main():
