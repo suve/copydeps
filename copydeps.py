@@ -34,9 +34,11 @@ def print_deps(deplist):
 			print("\"" + dep.name + "\" -> (unable to resolve)")
 		else:
 			print("\"" + dep.name + "\" -> \"" + dep.path + "\"")
+	return True
 
 
 def copy_deps(deplist, target_dir):
+	all_ok = True
 	for dep in deplist:
 		if dep.isBlacklisted:
 			print(PROGRAM_NAME + ": \"" + dep.name + "\" is blacklisted, skipping")
@@ -44,6 +46,7 @@ def copy_deps(deplist, target_dir):
 
 		if dep.path is None:
 			print(PROGRAM_NAME + ": unable to resolve \"" + dep.name + "\"")
+			all_ok = False
 			continue
 
 		code, _, err = run("cp", ["--preserve=timestamps", dep.path, target_dir])
@@ -51,6 +54,9 @@ def copy_deps(deplist, target_dir):
 			print(PROGRAM_NAME + ": \"" + dep.name + "\" copied from \"" + dep.path + "\"")
 		else:
 			print(PROGRAM_NAME + ": \"" + dep.name + "\" could not be copied (" + err[0] + ")")
+			all_ok = False
+
+	return all_ok
 
 
 def main():
@@ -58,14 +64,11 @@ def main():
 	deps = get_deps(executable)
 
 	if settings.dry_run:
-		print_deps(deps)
+		success = print_deps(deps)
 	else:
-		copy_deps(deps, target_dir)
+		success = copy_deps(deps, target_dir)
 
-	# Exit successfully only if all dependencies were resolved and copied
-	for dep in deps:
-		if (not dep.isBlacklisted) and (dep.path is None):
-			sys.exit(1)
+	sys.exit(0 if success else 1)
 
 
 if __name__ == "__main__":
