@@ -4,7 +4,7 @@ copydeps is a small program that can be used to find and copy all .so / .dll
 files needed by a program to run. This can be useful when you want to bundle
 an application together will all its dependencies.
 
-Usage: copydeps EXECUTABLE [TARGET-DIR]
+Usage: copydeps [--dry-run] [--verbose] EXECUTABLE [TARGET-DIR]
   EXECUTABLE can be one of the following supported formats:
   - 32-bit ELF
   - 64-bit ELF
@@ -17,6 +17,8 @@ Usage: copydeps EXECUTABLE [TARGET-DIR]
 Program options:
 --dry-run
   Print the list of dependencies without actually copying the .so / .dll files.
+--verbose
+  Print the names of the dependencies as they're being copied over.
 
 
 Dependencies:

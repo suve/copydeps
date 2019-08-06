@@ -29,11 +29,11 @@ from copydeps.version import PROGRAM_NAME
 def print_deps(deplist):
 	for dep in deplist:
 		if dep.isBlacklisted:
-			print("\"" + dep.name + "\" -> (blacklisted)")
+			print("\"" + dep.name + "\": (blacklisted)")
 		elif dep.path is None:
-			print("\"" + dep.name + "\" -> (unable to resolve)")
+			print("\"" + dep.name + "\": (unable to resolve)")
 		else:
-			print("\"" + dep.name + "\" -> \"" + dep.path + "\"")
+			print("\"" + dep.name + "\": " + dep.path)
 	return True
 
 
@@ -41,19 +41,22 @@ def copy_deps(deplist, target_dir):
 	all_ok = True
 	for dep in deplist:
 		if dep.isBlacklisted:
-			print(PROGRAM_NAME + ": \"" + dep.name + "\" is blacklisted, skipping")
+			if settings.verbose:
+				print("\"" + dep.name + "\" is blacklisted, skipping")
 			continue
 
 		if dep.path is None:
-			print(PROGRAM_NAME + ": unable to resolve \"" + dep.name + "\"")
+			print(PROGRAM_NAME + ": unable to resolve \"" + dep.name + "\"", file=sys.stderr)
 			all_ok = False
 			continue
 
 		code, _, err = run("cp", ["--preserve=timestamps", dep.path, target_dir])
 		if code == 0:
-			print(PROGRAM_NAME + ": \"" + dep.name + "\" copied from \"" + dep.path + "\"")
+			if settings.verbose:
+				final_path = os.path.abspath(target_dir + "/" + dep.name)
+				print("\"" + dep.name + "\": " + dep.path + " -> " + final_path)
 		else:
-			print(PROGRAM_NAME + ": \"" + dep.name + "\" could not be copied (" + err[0] + ")")
+			print(PROGRAM_NAME + ": \"" + dep.name + "\" could not be copied (" + err[0] + ")", file=sys.stderr)
 			all_ok = False
 
 	return all_ok

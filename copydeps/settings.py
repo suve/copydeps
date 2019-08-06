@@ -28,7 +28,7 @@ class HelpAction(argparse.Action):
 	def __call__(self, parser, namespace, values, option_string=None):
 		print(
 			PROGRAM_NAME + " is a script for bundling the .so / .dll files needed by binary executables.\n"
-			"Usage: " + PROGRAM_NAME + " [--dry-run] EXECUTABLE [TARGET-DIR]\n"
+			"Usage: " + PROGRAM_NAME + " [--dry-run] [--verbose] EXECUTABLE [TARGET-DIR]\n"
 			"\n"
 			"EXECUTABLE can be one of the following supported formats:\n"
 			"- 32-bit ELF\n"
@@ -41,21 +41,25 @@ class HelpAction(argparse.Action):
 			"\n"
 			"Program options:\n"
 			"--dry-run\n"
-			"  Print the list of dependencies without actually copying the .so / .dll files.")
+			"  Print the list of dependencies without actually copying the .so / .dll files.\n"
+			"--verbose\n"
+			"  Print the names of the dependencies as they're being copied over.")
 		sys.exit(0)
 
 
 class Settings:
-	dry_run = None
-	executable = None
-	target_dir = None
+	dry_run = False
+	executable = ""
+	target_dir = ""
+	verbose = False
 
 	def __parse__(self):
 		parser = argparse.ArgumentParser(prog="copydeps", add_help=False)
 		parser.add_argument('EXECUTABLE', type=str, nargs=1)
 		parser.add_argument('TARGET-DIR', type=str, nargs="?", default=None)
 
-		parser.add_argument("--dry-run", action="count", default=0)
+		parser.add_argument("--dry-run", action="store_true")
+		parser.add_argument("--verbose", action="store_true")
 
 		parser.add_argument("--help", nargs=0, action=HelpAction)
 		parser.add_argument(
@@ -78,11 +82,10 @@ class Settings:
 			target_dir = os.path.dirname(os.path.abspath(executable))
 		target_dir = target_dir + "/"
 
-		dry_run = args["dry_run"] > 0
-
-		self.dry_run = dry_run
+		self.dry_run = args["dry_run"]
 		self.executable = executable
 		self.target_dir = target_dir
+		self.verbose = args["verbose"]
 
 
 settings = Settings()
