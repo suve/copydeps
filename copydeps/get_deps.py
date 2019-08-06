@@ -42,8 +42,8 @@ class Dependency:
 			blacklist = ["ld-linux-x86-64."]
 		elif self.format in [FileFormat.win32, FileFormat.win64]:
 			blacklist = [
-				"ADVAPI32.dll", "GDI32.dll", "IMM32.dll", "KERNEL32.dll", "msvcrt.dll", "ole32.dll", "OLEAUT32.dll",
-				"SETUPAPI.dll", "SHELL32.dll", "USER32.dll", "VERSION.dll", "WINMM.dll", "WS2_32.dll"]
+				"ADVAPI32.dll", "CRYPT32.dll", "GDI32.dll", "IMM32.dll", "KERNEL32.dll", "msvcrt.dll", "ole32.dll",
+				"OLEAUT32.dll", "SETUPAPI.dll", "SHELL32.dll", "USER32.dll", "VERSION.dll", "WINMM.dll", "WS2_32.dll"]
 		else:
 			blacklist = []
 
