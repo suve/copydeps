@@ -37,6 +37,13 @@ def print_deps(deplist):
 	return True
 
 
+def samefile(a, b):
+	try:
+		return os.path.samefile(a, b)
+	except FileNotFoundError:
+		return False
+
+
 def copy_deps(deplist, target_dir):
 	all_ok = True
 	for dep in deplist:
@@ -51,7 +58,7 @@ def copy_deps(deplist, target_dir):
 			continue
 
 		target_path = os.path.abspath(target_dir + "/" + dep.name)
-		if os.path.samefile(dep.path, target_path):
+		if samefile(dep.path, target_path):
 			if settings.verbose:
 				print("\"" + dep.name + "\": preferred version already present in the target directory")
 			continue

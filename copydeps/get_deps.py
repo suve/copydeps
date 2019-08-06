@@ -156,7 +156,8 @@ def get_deps_recursive(executable, deplist):
 
 		if not dep.isBlacklisted:
 			dep.resolve()
-			get_deps_recursive(dep.path, deplist)
+			if dep.path is not None:
+				get_deps_recursive(dep.path, deplist)
 
 
 def get_deps(executable):
