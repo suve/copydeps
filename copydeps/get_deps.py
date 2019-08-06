@@ -28,25 +28,56 @@ from copydeps.version import PROGRAM_NAME
 FileFormat = Enum("FileFormat", "elf32 elf64 win32 win64")
 
 
-def find_so(soname, file_format):
-	if file_format == FileFormat.elf32:
-		prefixes = ["/lib/", "/usr/lib/", "/usr/local/lib/"]
-	elif file_format == FileFormat.elf64:
-		prefixes = ["/lib64/", "/usr/lib64/", "/usr/local/lib64/"]
-	elif file_format == FileFormat.win32:
-		prefixes = ["/usr/i686-w64-mingw32/sys-root/mingw/bin/"]
-	elif file_format == FileFormat.win64:
-		prefixes = ["/usr/x86_64-w64-mingw32/sys-root/mingw/bin/"]
-	else:
-		print(PROGRAM_NAME + ": unknown file_format value (" + file_format + "), something is very wrong", file=sys.stderr)
-		sys.exit(1)
+class Dependency:
+	name = None
+	format = None
+	path = None
+	isBlacklisted = False
 
-	for prefix in prefixes:
-		path = prefix + soname
-		if os.path.isfile(path):
-			return path
+	def __check_blacklist__(self):
+		if self.format == FileFormat.elf32:
+			blacklist = ["ld-linux."]
+		elif self.format == FileFormat.elf64:
+			blacklist = ["ld-linux-x86-64."]
+		elif self.format in [FileFormat.win32, FileFormat.win64]:
+			blacklist = [
+				"ADVAPI32.dll", "GDI32.dll", "IMM32.dll", "KERNEL32.dll", "msvcrt.dll", "ole32.dll", "OLEAUT32.dll",
+				"SETUPAPI.dll", "SHELL32.dll", "USER32.dll", "VERSION.dll", "WINMM.dll", "WS2_32.dll"]
+		else:
+			blacklist = []
 
-	return None
+		for entry in blacklist:
+			if entry in self.name:
+				return True
+		return False
+
+	def resolve(self):
+		if self.format == FileFormat.elf32:
+			prefixes = ["/lib/", "/usr/lib/", "/usr/local/lib/"]
+		elif self.format == FileFormat.elf64:
+			prefixes = ["/lib64/", "/usr/lib64/", "/usr/local/lib64/"]
+		elif self.format == FileFormat.win32:
+			prefixes = ["/usr/i686-w64-mingw32/sys-root/mingw/bin/"]
+		elif self.format == FileFormat.win64:
+			prefixes = ["/usr/x86_64-w64-mingw32/sys-root/mingw/bin/"]
+		else:
+			prefixes = []
+
+		for prefix in prefixes:
+			path = prefix + self.name
+			if os.path.isfile(path):
+				self.path = path
+				return path
+		return None
+
+	def __init__(self, name, format):
+		self.format = format
+		if format not in [FileFormat.elf32, FileFormat.elf64, FileFormat.win32, FileFormat.win64]:
+			print(PROGRAM_NAME + ": incorrect file format value (" + format + "), something is very wrong", file=sys.stderr)
+			sys.exit(1)
+
+		self.name = name
+		self.isBlacklisted = self.__check_blacklist__()
 
 
 def get_deps__parse_header(executable, header):
@@ -98,26 +129,6 @@ def get_deps__parse_line(line, file_format):
 		sys.exit(1)
 
 
-def check_blacklist(executable, file_format):
-	if file_format == FileFormat.elf32:
-		blacklist = ["ld-linux."]
-	elif file_format == FileFormat.elf64:
-		blacklist = ["ld-linux-x86-64."]
-	elif file_format in [FileFormat.win32, FileFormat.win64]:
-		blacklist = [
-			"ADVAPI32.dll", "GDI32.dll", "IMM32.dll", "KERNEL32.dll", "msvcrt.dll", "ole32.dll", "OLEAUT32.dll",
-			"SETUPAPI.dll", "SHELL32.dll", "USER32.dll", "VERSION.dll", "WINMM.dll", "WS2_32.dll"]
-	else:
-		print(PROGRAM_NAME + ": unknown file_format value (" + file_format + "), something is very wrong", file=sys.stderr)
-		sys.exit(1)
-
-	for blackentry in blacklist:
-		if blackentry in executable:
-			return True
-
-	return False
-
-
 def get_deps_recursive(executable, deps):
 	code, output, err = run("objdump", ["-x", executable])
 	if code != 0:
@@ -136,12 +147,13 @@ def get_deps_recursive(executable, deps):
 		if so_name in deps:
 			continue
 
-		if check_blacklist(so_name, file_format):
+		dep = Dependency(so_name, file_format)
+		if dep.isBlacklisted:
 			deps[so_name] = None
 			print(PROGRAM_NAME + ": \"" + so_name + "\" is blacklisted, skipping")
 			continue
 
-		so_path = find_so(so_name, file_format)
+		so_path = dep.resolve()
 		if so_path is None:
 			print(PROGRAM_NAME + ": unable to resolve \"" + so_name + "\"", file=sys.stderr)
 			sys.exit(1)
