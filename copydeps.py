@@ -32,8 +32,12 @@ FILE_FORMAT_WIN32 = 20
 FILE_FORMAT_WIN64 = 21
 
 
-def run(program, args = []):
-	args.insert(0, program)
+def run(program, args=None):
+	if args is None:
+		args = [program]
+	else:
+		args.insert(0, program)
+
 	proc = subprocess.run(args=args, capture_output=True)
 
 	status = proc.returncode
