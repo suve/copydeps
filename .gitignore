@@ -1,0 +1,6 @@
+# IDE-specific stuff
+.idea/
+.geany
+
+# Pycache
+**/__pycache__/*

@@ -21,10 +21,7 @@ import os
 import subprocess
 import sys
 
-
-PROGRAM_AUTHOR  = "suve"
-PROGRAM_NAME    = "copydeps"
-PROGRAM_VERSION = "3.0"
+from copydeps.version import PROGRAM_AUTHOR, PROGRAM_NAME, PROGRAM_VERSION
 
 FILE_FORMAT_ELF32 = 10
 FILE_FORMAT_ELF64 = 11
