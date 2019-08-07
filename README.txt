@@ -15,6 +15,9 @@ Usage: copydeps [options...] EXECUTABLE [TARGET-DIR]
   When omitted, defaults to the directory of the target executable.
 
 Program options:
+--blacklist PATTERN
+  Add PATTERN to the built-in blacklist (.so / .dll names that should not
+  be resolved nor copied over).
 --dry-run
   Print the list of dependencies without actually copying the .so / .dll files.
 --exedir

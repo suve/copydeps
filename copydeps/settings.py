@@ -18,6 +18,7 @@
 
 import argparse
 import os
+import re
 import sys
 
 from copydeps.version import PROGRAM_AUTHOR, PROGRAM_NAME, PROGRAM_VERSION
@@ -39,6 +40,9 @@ class HelpAction(argparse.Action):
 			"When omitted, defaults to the directory of the target executable.\n"
 			"\n"
 			"Program options:\n"
+			"--blacklist PATTERN\n"
+			"  Add PATTERN to the built-in blacklist (.so / .dll names that should not\n"
+			"  be resolved nor copied over).\n"
 			"--dry-run\n"
 			"  Print the list of dependencies without actually copying the .so / .dll files.\n"
 			"--exedir\n"
@@ -51,7 +55,31 @@ class HelpAction(argparse.Action):
 		sys.exit(0)
 
 
+def compile_regexes(re_list):
+	if re_list is None:
+		return []
+
+	result = []
+	for re_entry in re_list:
+		try:
+			compiled = re.compile(re_entry)
+			result.append(compiled)
+		except re.error as err:
+			if err.colno is None:
+				print(
+					PROGRAM_NAME + ": \"" + re_entry + "\" is not a valid regular expression (" + err.msg + ")",
+					file=sys.stderr)
+			else:
+				print(
+					PROGRAM_NAME + ": \"" + re_entry + "\" is not a valid regular expression\n"
+					+ "".rjust(len(PROGRAM_NAME + ": \"") + err.colno - 1) + "^ " + err.msg,
+					file=sys.stderr)
+			exit(1)
+	return result
+
+
 class Settings:
+	blacklist = []
 	dry_run = False
 	executable = ""
 	exedir = False
@@ -64,6 +92,7 @@ class Settings:
 		parser.add_argument('EXECUTABLE', type=str, nargs=1)
 		parser.add_argument('TARGET-DIR', type=str, nargs="?", default=None)
 
+		parser.add_argument("--blacklist", action="append", metavar="PATTERN")
 		parser.add_argument("--dry-run", action="store_true")
 		parser.add_argument("--exedir", action="store_true")
 		parser.add_argument("--no-clobber", action="store_true")
@@ -98,6 +127,8 @@ class Settings:
 
 		self.executable = executable
 		self.target_dir = target_dir
+
+		self.blacklist = compile_regexes(args["blacklist"])
 
 		self.dry_run = args["dry_run"]
 		self.exedir = args["exedir"]

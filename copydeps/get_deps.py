@@ -56,9 +56,14 @@ class Dependency:
 		else:
 			blacklist = []
 
-		for entry in blacklist:
-			if re.match(entry, self.name):
+		for black_pattern in blacklist:
+			if re.match(black_pattern, self.name):
 				return True
+
+		for black_re in settings.blacklist:
+			if black_re.match(self.name):
+				return True
+
 		return False
 
 	def resolve(self):

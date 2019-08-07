@@ -35,6 +35,10 @@ When omitted, defaults to the directory of the target executable.
 .
 .SH OPTIONS
 .TP
+\fB\-\-blacklist\fR \fIPATTERN\fR
+Add \fIPATTERN\fR to the built-in blacklist (\fB.so\fR / \fB.dll\fR names that should not
+be resolved nor copied over).
+.TP
 .B \-\-dry\-run
 Print the list of dependencies without actually copying the \fB.so\fR / \fB.dll\fR files.
 .TP
