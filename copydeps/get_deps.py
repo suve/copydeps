@@ -18,6 +18,7 @@
 
 from enum import Enum
 import os
+import re
 import sys
 
 from copydeps.run_program import run
@@ -36,18 +37,27 @@ class Dependency:
 
 	def __check_blacklist__(self):
 		if self.format == FileFormat.elf32:
-			blacklist = ["ld-linux."]
+			blacklist = [r"^ld-linux\.so*"]
 		elif self.format == FileFormat.elf64:
-			blacklist = ["ld-linux-x86-64."]
+			blacklist = [r"^ld-linux-x86-64\.so*"]
 		elif self.format in [FileFormat.win32, FileFormat.win64]:
 			blacklist = [
-				"ADVAPI32.dll", "CRYPT32.dll", "GDI32.dll", "IMM32.dll", "KERNEL32.dll", "msvcrt.dll", "ole32.dll",
-				"OLEAUT32.dll", "SETUPAPI.dll", "SHELL32.dll", "USER32.dll", "VERSION.dll", "WINMM.dll", "WS2_32.dll"]
+				r"^ADVAPI32\.dll$",
+				r"^CRYPT32\.dll$",
+				r"^GDI32\.dll$",
+				r"^IMM32\.dll$",
+				r"^KERNEL32\.dll$",
+				r"^msvcrt\.dll$",
+				r"^ole32\.dll$", r"^OLEAUT32\.dll$",
+				r"^SETUPAPI\.dll$", r"^SHELL32\.dll$",
+				r"^USER32\.dll$",
+				r"^VERSION\.dll$",
+				r"^WINMM\.dll$", r"^WS2_32\.dll$"]
 		else:
 			blacklist = []
 
 		for entry in blacklist:
-			if entry in self.name:
+			if re.match(entry, self.name):
 				return True
 		return False
 
