@@ -27,6 +27,9 @@ Program options:
   Do not overwrite .so / .dll files already existing in the target directory.
 --verbose
   Print the names of the dependencies as they're being copied over.
+--whitelist PATTERN
+  Add PATTERN to the whitelist (.so / .dll names that should always be resolved
+  and copied over). The whitelist takes precedence over the blacklist.
 
 
 Dependencies:

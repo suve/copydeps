@@ -36,27 +36,35 @@ When omitted, defaults to the directory of the target executable.
 .SH OPTIONS
 .TP
 \fB\-\-blacklist\fR \fIPATTERN\fR
-Add \fIPATTERN\fR to the built-in blacklist (\fB.so\fR / \fB.dll\fR names that should not
-be resolved nor copied over).
+Add \fIPATTERN\fR to the built-in blacklist (\fB.so\fR / \fB.dll\fR names
+that should not be resolved nor copied over).
 .TP
 .B \-\-dry\-run
-Print the list of dependencies without actually copying the \fB.so\fR / \fB.dll\fR files.
+Print the list of dependencies
+without actually copying the \fB.so\fR / \fB.dll\fR files.
 .TP
 .B \-\-exedir
-Include the directory of the executable in the \fB.so\fR / \fB.dll\fR resolve paths.
+Include the directory of the executable
+in the \fB.so\fR / \fB.dll\fR resolve paths.
 Files found in the exedir are preferred over those in system paths.
 .TP
 .B \-\-help
 Print a short help message and exit.
 .TP
 .B \-\-no\-clobber
-Do not overwrite \fB.so\fR / \fB.dll\fR files already existing in the target directory.
+Do not overwrite \fB.so\fR / \fB.dll\fR files
+already existing in the target directory.
 .TP
 .B \-\-verbose
 Print the names of the dependencies as they're being copied over.
 .TP
 .B \-\-version
 Print version information and exit.
+.TP
+\fB\-\-whitelist\fR \fIPATTERN\fR
+Add \fIPATTERN\fR to the whitelist (\fB.so\fR / \fB.dll\fR names
+that should always be resolved and copied over).
+The whitelist takes precedence over the blacklist.
 .
 .SH EXIT STATUS
 An exit status of \fB0\fR indicates success.

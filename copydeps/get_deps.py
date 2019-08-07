@@ -35,7 +35,18 @@ class Dependency:
 	path = None
 	isBlacklisted = False
 
-	def __check_blacklist__(self):
+	def __check_user_blacklist(self):
+		for white_re in settings.whitelist:
+			if white_re.match(self.name):
+				return False
+
+		for black_re in settings.blacklist:
+			if black_re.match(self.name):
+				return True
+
+		return None
+
+	def __check_builtin_blacklist__(self):
 		if self.format == FileFormat.elf32:
 			blacklist = [r"^ld-linux\.so*"]
 		elif self.format == FileFormat.elf64:
@@ -60,11 +71,13 @@ class Dependency:
 			if re.match(black_pattern, self.name):
 				return True
 
-		for black_re in settings.blacklist:
-			if black_re.match(self.name):
-				return True
-
 		return False
+
+	def __check_blacklist__(self):
+		user = self.__check_user_blacklist()
+		if user is not None:
+			return user
+		return self.__check_builtin_blacklist__()
 
 	def resolve(self):
 		if self.format == FileFormat.elf32:

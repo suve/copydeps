@@ -51,7 +51,10 @@ class HelpAction(argparse.Action):
 			"--no-clobber\n"
 			"  Do not overwrite .so / .dll files already existing in the target directory.\n"
 			"--verbose\n"
-			"  Print the names of the dependencies as they're being copied over.")
+			"  Print the names of the dependencies as they're being copied over.\n"
+			"--whitelist PATTERN\n"
+			"  Add PATTERN to the whitelist (.so / .dll names that should always be\n"
+			"  resolved and copied over). The whitelist has precedence over the blacklist.")
 		sys.exit(0)
 
 
@@ -97,6 +100,7 @@ class Settings:
 		parser.add_argument("--exedir", action="store_true")
 		parser.add_argument("--no-clobber", action="store_true")
 		parser.add_argument("--verbose", action="store_true")
+		parser.add_argument("--whitelist", action="append", metavar="PATTERN")
 
 		parser.add_argument("--help", nargs=0, action=HelpAction)
 		parser.add_argument(
@@ -129,6 +133,7 @@ class Settings:
 		self.target_dir = target_dir
 
 		self.blacklist = compile_regexes(args["blacklist"])
+		self.whitelist = compile_regexes(args["whitelist"])
 
 		self.dry_run = args["dry_run"]
 		self.exedir = args["exedir"]
