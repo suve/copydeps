@@ -50,6 +50,9 @@ class HelpAction(argparse.Action):
 			"  Files found in the exedir are preferred over those in system paths.\n"
 			"--no-clobber\n"
 			"  Do not overwrite .so / .dll files already existing in the target directory.\n"
+			"--search-dir DIRECTORY\n"
+			"  Add DIRECTORY to the list of paths to search when resolving .so / .dll names.\n"
+			"  User-specified directories take precedence over system paths.\n"
 			"--verbose\n"
 			"  Print the names of the dependencies as they're being copied over.\n"
 			"--whitelist PATTERN\n"
@@ -81,14 +84,25 @@ def compile_regexes(re_list):
 	return result
 
 
+def verify_dir(path):
+	if not os.path.exists(path):
+		print(PROGRAM_NAME + ": Directory \"" + path + "\" does not exist", file=sys.stderr)
+		sys.exit(1)
+	if not os.path.isdir(path):
+		print(PROGRAM_NAME + ": \"" + path + "\" is not a directory", file=sys.stderr)
+		sys.exit(1)
+
+
 class Settings:
 	blacklist = []
 	dry_run = False
 	executable = ""
 	exedir = False
 	no_clobber = False
+	search_dirs = []
 	target_dir = ""
 	verbose = False
+	whitelist = []
 
 	def __parse__(self):
 		parser = argparse.ArgumentParser(prog="copydeps", add_help=False)
@@ -99,6 +113,7 @@ class Settings:
 		parser.add_argument("--dry-run", action="store_true")
 		parser.add_argument("--exedir", action="store_true")
 		parser.add_argument("--no-clobber", action="store_true")
+		parser.add_argument("--search-dir", action="append", metavar="DIRECTORY")
 		parser.add_argument("--verbose", action="store_true")
 		parser.add_argument("--whitelist", action="append", metavar="PATTERN")
 
@@ -119,12 +134,7 @@ class Settings:
 
 		target_dir = args["TARGET-DIR"]
 		if target_dir is not None:
-			if not os.path.exists(target_dir):
-				print(PROGRAM_NAME + ": Directory \"" + target_dir + "\" does not exist", file=sys.stderr)
-				sys.exit(1)
-			if not os.path.isdir(target_dir):
-				print(PROGRAM_NAME + ": \"" + target_dir + "\" is not a directory", file=sys.stderr)
-				sys.exit(1)
+			verify_dir(target_dir)
 		else:
 			target_dir = os.path.dirname(os.path.abspath(executable))
 		target_dir = target_dir + "/"
@@ -134,6 +144,13 @@ class Settings:
 
 		self.blacklist = compile_regexes(args["blacklist"])
 		self.whitelist = compile_regexes(args["whitelist"])
+
+		self.search_dirs = []
+		if args["search_dir"] is not None:
+			for dirname in args["search_dir"]:
+				dirname = os.path.abspath(dirname) + "/"
+				verify_dir(dirname)
+				self.search_dirs.append(dirname)
 
 		self.dry_run = args["dry_run"]
 		self.exedir = args["exedir"]

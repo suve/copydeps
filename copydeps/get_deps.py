@@ -80,22 +80,28 @@ class Dependency:
 		return self.__check_builtin_blacklist__()
 
 	def resolve(self):
-		if self.format == FileFormat.elf32:
-			prefixes = ["/lib/", "/usr/lib/", "/usr/local/lib/"]
-		elif self.format == FileFormat.elf64:
-			prefixes = ["/lib64/", "/usr/lib64/", "/usr/local/lib64/"]
-		elif self.format == FileFormat.win32:
-			prefixes = ["/usr/i686-w64-mingw32/sys-root/mingw/bin/"]
-		elif self.format == FileFormat.win64:
-			prefixes = ["/usr/x86_64-w64-mingw32/sys-root/mingw/bin/"]
-		else:
-			prefixes = []
-
 		if settings.exedir:
-			prefixes.insert(0, os.path.dirname(settings.executable) + "/")
+			exe_dirs = [os.path.dirname(settings.executable) + "/"]
+		else:
+			exe_dirs = []
 
-		for prefix in prefixes:
-			path = prefix + self.name
+		user_dirs = settings.search_dirs
+
+		if self.format == FileFormat.elf32:
+			sys_dirs = ["/lib/", "/usr/lib/", "/usr/local/lib/"]
+		elif self.format == FileFormat.elf64:
+			sys_dirs = ["/lib64/", "/usr/lib64/", "/usr/local/lib64/"]
+		elif self.format == FileFormat.win32:
+			sys_dirs = ["/usr/i686-w64-mingw32/sys-root/mingw/bin/"]
+		elif self.format == FileFormat.win64:
+			sys_dirs = ["/usr/x86_64-w64-mingw32/sys-root/mingw/bin/"]
+		else:
+			sys_dirs = []
+
+		search_dirs = exe_dirs + user_dirs + sys_dirs
+
+		for dirname in search_dirs:
+			path = dirname + self.name
 			if os.path.isfile(path):
 				self.path = path
 				return path

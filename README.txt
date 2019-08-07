@@ -25,6 +25,9 @@ Program options:
   Files found in the exedir are preferred over those in system paths.
 --no-clobber
   Do not overwrite .so / .dll files already existing in the target directory.
+--search-dir DIRECTORY
+  Add DIRECTORY to the list of paths to search when resolving .so / .dll names.
+  User-specified directories take precedence over system paths.
 --verbose
   Print the names of the dependencies as they're being copied over.
 --whitelist PATTERN
