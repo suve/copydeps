@@ -2,17 +2,18 @@
 .
 .SH NAME
 .B copydeps
-\- copy a program's dependencies (.so / .dll files)
+\- copy a program's dependencies (\fB.so\fR / \fB.dll\fR files)
 .
 .SH SYNOPSIS
 .SY copydeps
+[\fIOPTIONS\fI]
 .I EXECUTABLE
 [\fITARGET-DIR\fR]
 .YS
 .
 .SH DESCRIPTION
 .B copydeps
-is a small script that can be used to find and copy all
+is a small program that can be used to find and copy all
 \fB.so\fR / \fB.dll\fR files needed by a program to run.
 This can be useful when you want to bundle an application
 together will all its dependencies.
@@ -30,18 +31,36 @@ can be one of the following supported formats:
 
 .I TARGET-DIR
 specifies the directory to copy the \fB.so\fR / \fB.dll\fR files to.
-When omitted, defaults to the
-.B (!)
-.I current working directory
-- not to be confused with the directory of the target executable.
+When omitted, defaults to the directory of the target executable.
 .
 .SH OPTIONS
+.TP
+.B \-\-dry\-run
+Print the list of dependencies without actually copying the \fB.so\fR / \fB.dll\fR files.
+.TP
+.B \-\-exedir
+Include the directory of the executable in the \fB.so\fR / \fB.dll\fR resolve paths.
+Files found in the exedir are preferred over those in system paths.
 .TP
 .B \-\-help
 Print a short help message and exit.
 .TP
+.B \-\-no\-clobber
+Do not overwrite \fB.so\fR / \fB.dll\fR files already existing in the target directory.
+.TP
+.B \-\-verbose
+Print the names of the dependencies as they're being copied over.
+.TP
 .B \-\-version
 Print version information and exit.
+.
+.SH EXIT STATUS
+An exit status of \fB0\fR indicates success.
+Should the program fail to resolve any of the dependencies, or there is an error when copying the files over
+to the target directory, the exit status will be non-zero.
+
+When performing a dry run, the exit status will always be \fB0\fR, even if the program
+failed to resolve some dependencies.
 .
 .SH SEE ALSO
 ldd(1), objdump(1)
