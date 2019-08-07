@@ -63,6 +63,11 @@ def copy_deps(deplist, target_dir):
 				print("\"" + dep.name + "\": preferred version already present in the target directory")
 			continue
 
+		if settings.no_clobber and os.path.exists(target_path):
+			if settings.verbose:
+				print("\"" + dep.name + "\": already present in the target directory, not overwriting due to --no-clobber")
+			continue
+
 		code, _, err = run("cp", ["--preserve=timestamps", dep.path, target_path])
 		if code == 0:
 			if settings.verbose:

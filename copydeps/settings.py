@@ -44,6 +44,8 @@ class HelpAction(argparse.Action):
 			"--exedir\n"
 			"  Include the directory of the executable in the .so / .dll resolve paths.\n"
 			"  Files found in the exedir are preferred over those in system paths.\n"
+			"--no-clobber\n"
+			"  Do not overwrite .so / .dll files already existing in the target directory.\n"
 			"--verbose\n"
 			"  Print the names of the dependencies as they're being copied over.")
 		sys.exit(0)
@@ -53,6 +55,7 @@ class Settings:
 	dry_run = False
 	executable = ""
 	exedir = False
+	no_clobber = False
 	target_dir = ""
 	verbose = False
 
@@ -63,6 +66,7 @@ class Settings:
 
 		parser.add_argument("--dry-run", action="store_true")
 		parser.add_argument("--exedir", action="store_true")
+		parser.add_argument("--no-clobber", action="store_true")
 		parser.add_argument("--verbose", action="store_true")
 
 		parser.add_argument("--help", nargs=0, action=HelpAction)
@@ -91,6 +95,7 @@ class Settings:
 
 		self.dry_run = args["dry_run"]
 		self.exedir = args["exedir"]
+		self.no_clobber = args["no_clobber"]
 		self.verbose = args["verbose"]
 
 

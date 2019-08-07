@@ -20,6 +20,8 @@ Program options:
 --exedir
   Include the directory of the executable in the .so / .dll resolve paths.
   Files found in the exedir are preferred over those in system paths.
+--no-clobber
+  Do not overwrite .so / .dll files already existing in the target directory.
 --verbose
   Print the names of the dependencies as they're being copied over.
 
