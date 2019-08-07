@@ -77,14 +77,20 @@ class Settings:
 		args = vars(args)
 
 		executable = args["EXECUTABLE"][0]
-		if not os.path.isfile(executable):
+		if not os.path.exists(executable):
 			print(PROGRAM_NAME + ": File \"" + executable + "\" does not exist", file=sys.stderr)
+			sys.exit(1)
+		if not os.path.isfile(executable):
+			print(PROGRAM_NAME + ": \"" + executable + "\" is not a regular file", file=sys.stderr)
 			sys.exit(1)
 
 		target_dir = args["TARGET-DIR"]
 		if target_dir is not None:
-			if not os.path.isdir(target_dir):
+			if not os.path.exists(target_dir):
 				print(PROGRAM_NAME + ": Directory \"" + target_dir + "\" does not exist", file=sys.stderr)
+				sys.exit(1)
+			if not os.path.isdir(target_dir):
+				print(PROGRAM_NAME + ": \"" + target_dir + "\" is not a directory", file=sys.stderr)
 				sys.exit(1)
 		else:
 			target_dir = os.path.dirname(os.path.abspath(executable))
