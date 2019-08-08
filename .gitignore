@@ -1,0 +1,12 @@
+# General
+build/
+dist/
+
+# Python-specific stuff
+*.egg-info/
+**/__pycache__/*
+
+# IDE-specific stuff
+.idea/
+.geany
+
