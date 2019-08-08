@@ -27,7 +27,10 @@ from copydeps.version import PROGRAM_AUTHOR, PROGRAM_NAME, PROGRAM_VERSION
 class HelpAction(argparse.Action):
 	def __call__(self, parser, namespace, values, option_string=None):
 		print(
-			PROGRAM_NAME + " is a script for bundling the .so / .dll files needed by binary executables.\n"
+			PROGRAM_NAME + " is a small program that can be used to find and copy all .so / .dll\n"
+			"files needed by a program to run. This can be useful when you want to bundle\n"
+			"an application together will all its dependencies.\n"
+			"\n"
 			"Usage: " + PROGRAM_NAME + " [options...] EXECUTABLE [TARGET-DIR]\n"
 			"\n"
 			"EXECUTABLE can be one of the following supported formats:\n"
@@ -78,7 +81,7 @@ def compile_regexes(re_list):
 			else:
 				print(
 					PROGRAM_NAME + ": \"" + re_entry + "\" is not a valid regular expression\n"
-					+ "".rjust(len(PROGRAM_NAME + ": \"") + err.colno - 1) + "^ " + err.msg,
+					+ "".rjust(len(PROGRAM_NAME + ": \"") + err.colno - 1) + "^~ " + err.msg,
 					file=sys.stderr)
 			exit(1)
 	return result
