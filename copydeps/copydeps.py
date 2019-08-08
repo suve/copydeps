@@ -79,7 +79,7 @@ def copy_deps(deplist, target_dir):
 	return all_ok
 
 
-def main():
+def copydeps_main():
 	executable, target_dir = parse_args()
 	deps = get_deps(executable)
 
@@ -92,4 +92,4 @@ def main():
 
 
 if __name__ == "__main__":
-	main()
+	copydeps_main()
