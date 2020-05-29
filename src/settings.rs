@@ -15,11 +15,26 @@
  * this program (LICENCE.txt). If not, see <https://www.gnu.org/licenses/>.
  */
 use std::env;
+use std::path::PathBuf;
 use std::vec::Vec;
 
 extern crate getopts;
 use getopts::Options;
 use getopts::ParsingStyle;
+
+use crate::version::*;
+
+
+fn verify_dir(dir: &PathBuf) -> Option<String> {
+	if !dir.exists() {
+		return Option::Some(format!("Directory \"{}\" does not exist", dir.to_str().unwrap()));
+	}
+	if !dir.is_dir() {
+		return Option::Some(format!("\"{}\" is not a directory", dir.to_str().unwrap()));
+	}
+	return Option::None
+}
+
 
 pub struct Settings {
 	black_list: Vec<String>,
@@ -63,10 +78,41 @@ impl Settings {
 		opts.optflag("", "no-clobber", "");
 		opts.optflag("", "verbose", "");
 
+
 		let matches = match opts.parse(args) {
 			Ok(m) => { m },
 			Err(f) => { return Result::Err(f.to_string()) }
 		};
+
+		match matches.free.len() {
+			0 => return Result::Err(format!("{}: Missing required argument: EXECUTABLE", PROGRAM_NAME)),
+			1 | 2 => {},
+			_ => return Result::Err(format!("{}: Unexpected extra arguments", PROGRAM_NAME))
+		}
+
+		let mut executable = PathBuf::from(matches.free.get(0).unwrap());
+		if !executable.exists() {
+			return Result::Err(format!("{}: File \"{}\" does not exist", PROGRAM_NAME, executable.to_str().unwrap()));
+		}
+		if !executable.is_file() {
+			return Result::Err(format!("{}: File \"{}\" is not a regular file", PROGRAM_NAME, executable.to_str().unwrap()));
+		}
+
+		executable = executable.canonicalize().unwrap();
+		let executable_dir = executable.parent().unwrap();
+
+		settings.executable = String::from(executable.to_str().unwrap());
+
+		if matches.free.len() == 2 {
+			let target_dir = PathBuf::from(matches.free.get(1).unwrap());
+			match verify_dir(&target_dir) {
+				Some(msg) => return Result::Err(format!("{}: {}", PROGRAM_NAME, msg)),
+				None => {},
+			}
+			settings.target_dir = String::from(target_dir.canonicalize().unwrap().to_str().unwrap());
+		} else {
+			settings.target_dir = String::from(executable_dir.to_str().unwrap());
+		}
 
 		settings.black_list = matches.opt_strs("blacklist");
 		settings.search_dirs = matches.opt_strs("search-dir");
@@ -76,7 +122,7 @@ impl Settings {
 			settings.dry_run = true;
 		}
 		if matches.opt_present("exedir") {
-			// add dir of executable to search_dirs
+			settings.search_dirs.push(String::from(executable_dir.to_str().unwrap()));
 		}
 		if matches.opt_present("no-clobber") {
 			settings.no_clobber = true;

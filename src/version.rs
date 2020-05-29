@@ -14,15 +14,6 @@
  * You should have received a copy of the GNU General Public License along with
  * this program (LICENCE.txt). If not, see <https://www.gnu.org/licenses/>.
  */
-use std::process::exit;
-
-mod settings;
-mod version;
-use settings::Settings;
-
-fn main() {
-	let settings = match Settings::new_from_argv() {
-		Ok(s) => { s },
-		Err(msg) => { eprintln!("{}", msg); exit(1); }
-	};
-}
+pub const PROGRAM_AUTHOR: &str = "suve";
+pub const PROGRAM_NAME: &str = "copydeps";
+pub const PROGRAM_VERSION: &str = concat!(env!("CARGO_PKG_VERSION_MAJOR"), ".", env!("CARGO_PKG_VERSION_MINOR"));
