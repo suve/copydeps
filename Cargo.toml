@@ -5,3 +5,9 @@ authors = ["suve <veg@svgames.pl>"]
 edition = "2018"
 license = "GPLv3"
 repository = "https://github.com/suve/copydeps/"
+
+[profile.release]
+debug = true
+
+[dependencies]
+getopts = "^0.2.21"
