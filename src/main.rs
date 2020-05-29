@@ -17,12 +17,14 @@
 use std::process::exit;
 
 mod settings;
-mod version;
 use settings::Settings;
+
+mod version;
+use version::*;
 
 fn main() {
 	let settings = match Settings::new_from_argv() {
 		Ok(s) => { s },
-		Err(msg) => { eprintln!("{}", msg); exit(1); }
+		Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(1); }
 	};
 }

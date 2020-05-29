@@ -16,6 +16,7 @@
  */
 use std::env;
 use std::path::PathBuf;
+use std::process::exit;
 use std::vec::Vec;
 
 extern crate getopts;
@@ -24,6 +25,49 @@ use getopts::ParsingStyle;
 
 use crate::version::*;
 
+fn print_help() {
+	print!(concat!(
+			"{NAME} v.{VERSION} by {AUTHOR}\n",
+			"Find and copy all .so / .dll files needed by a program to run.\n",
+			"This can be useful when you want to bundle an application\n",
+			"together will all its dependencies.\n",
+			"\n",
+			"Usage: {NAME} [options...] EXECUTABLE [TARGET-DIR]\n",
+			"\n",
+			"EXECUTABLE can be one of the following supported formats:\n",
+			"- 32-bit ELF\n",
+			"- 64-bit ELF\n",
+			"- i386 Microsoft Windows executable\n",
+			"- x86_64 Microsoft Windows executable\n",
+			"\n",
+			"TARGET-DIR specifies the directory to copy the .so / .dll files to.\n",
+			"When omitted, defaults to the directory of the target executable.\n",
+			"\n",
+			"Program options:\n",
+			"--blacklist PATTERN\n",
+			"  Add PATTERN to the built-in blacklist (.so / .dll names that should not\n",
+			"  be resolved nor copied over).\n",
+			"--dry-run\n",
+			"  Print the list of dependencies without actually copying the .so / .dll files.\n",
+			"--exedir\n",
+			"  Include the directory of the executable in the .so / .dll resolve paths.\n",
+			"  Files found in the exedir are preferred over those in system paths.\n",
+			"--no-clobber\n",
+			"  Do not overwrite .so / .dll files already existing in the target directory.\n",
+			"--search-dir DIRECTORY\n",
+			"  Add DIRECTORY to the list of paths to search when resolving .so / .dll names.\n",
+			"  User-specified directories take precedence over system paths.\n",
+			"--verbose\n",
+			"  Print the names of the dependencies as they're being copied over.\n",
+			"--whitelist PATTERN\n",
+			"  Add PATTERN to the whitelist (.so / .dll names that should always be\n",
+			"  resolved and copied over). The whitelist has precedence over the blacklist.\n"
+		),
+		AUTHOR = PROGRAM_AUTHOR,
+		NAME = PROGRAM_NAME,
+		VERSION = PROGRAM_VERSION,
+	);
+}
 
 fn verify_dir(dir: &PathBuf) -> Option<String> {
 	if !dir.exists() {
@@ -69,12 +113,16 @@ impl Settings {
 		opts.parsing_style(ParsingStyle::FloatingFrees);
 		opts.long_only(true);
 
+		opts.optflag("", "help", "");
+		opts.optflag("", "version", "");
+
 		opts.optmulti("", "blacklist", "", "");
 		opts.optmulti("", "search-dir", "", "");
 		opts.optmulti("", "whitelist", "", "");
 
 		opts.optflag("", "dry-run", "");
 		opts.optflag("", "exedir", "");
+
 		opts.optflag("", "no-clobber", "");
 		opts.optflag("", "verbose", "");
 
@@ -84,18 +132,27 @@ impl Settings {
 			Err(f) => { return Result::Err(f.to_string()) }
 		};
 
+		if matches.opt_present("help") {
+			print_help();
+			exit(0);
+		}
+		if matches.opt_present("version") {
+			println!("{} v.{} by {}", PROGRAM_NAME, PROGRAM_VERSION, PROGRAM_AUTHOR);
+			exit(0);
+		}
+
 		match matches.free.len() {
-			0 => return Result::Err(format!("{}: Missing required argument: EXECUTABLE", PROGRAM_NAME)),
+			0 => return Result::Err(String::from("Missing required argument: EXECUTABLE")),
 			1 | 2 => {},
-			_ => return Result::Err(format!("{}: Unexpected extra arguments", PROGRAM_NAME))
+			_ => return Result::Err(String::from("Unexpected extra arguments"))
 		}
 
 		let mut executable = PathBuf::from(matches.free.get(0).unwrap());
 		if !executable.exists() {
-			return Result::Err(format!("{}: File \"{}\" does not exist", PROGRAM_NAME, executable.to_str().unwrap()));
+			return Result::Err(format!("File \"{}\" does not exist", executable.to_str().unwrap()));
 		}
 		if !executable.is_file() {
-			return Result::Err(format!("{}: File \"{}\" is not a regular file", PROGRAM_NAME, executable.to_str().unwrap()));
+			return Result::Err(format!("File \"{}\" is not a regular file", executable.to_str().unwrap()));
 		}
 
 		executable = executable.canonicalize().unwrap();
@@ -106,7 +163,7 @@ impl Settings {
 		if matches.free.len() == 2 {
 			let target_dir = PathBuf::from(matches.free.get(1).unwrap());
 			match verify_dir(&target_dir) {
-				Some(msg) => return Result::Err(format!("{}: {}", PROGRAM_NAME, msg)),
+				Some(msg) => return Result::Err(msg),
 				None => {},
 			}
 			settings.target_dir = String::from(target_dir.canonicalize().unwrap().to_str().unwrap());
