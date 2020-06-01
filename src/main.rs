@@ -14,7 +14,11 @@
  * You should have received a copy of the GNU General Public License along with
  * this program (LICENCE.txt). If not, see <https://www.gnu.org/licenses/>.
  */
+use std::fs;
 use std::process::exit;
+
+extern crate goblin;
+use goblin::Object;
 
 mod settings;
 use settings::Settings;
@@ -24,7 +28,17 @@ use version::*;
 
 fn main() {
 	let settings = match Settings::new_from_argv() {
-		Ok(s) => { s },
+		Ok(s) => s,
 		Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(1); }
+	};
+
+	let bytes = match fs::read(&settings.executable) {
+		Ok(bytes) => bytes,
+		Err(msg) => { eprintln!("{}: Failed to read file \"{}\": {}", PROGRAM_NAME, &settings.executable, msg); exit(1); }
+	};
+
+	let file = match Object::parse(&bytes) {
+		Ok(obj) => obj,
+		Err(msg) => { eprintln!("{}: Failed to parse file \"{}\": {}", PROGRAM_NAME, &settings.executable, msg); exit(1); }
 	};
 }
