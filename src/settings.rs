@@ -81,14 +81,14 @@ fn verify_dir(dir: &PathBuf) -> Option<String> {
 
 
 pub struct Settings {
-	black_list: Vec<String>,
-	dry_run: bool,
-	executable: String,
-	no_clobber: bool,
-	search_dirs: Vec<String>,
-	target_dir: String,
-	verbose: bool,
-	white_list: Vec<String>,
+	pub black_list: Vec<String>,
+	pub dry_run: bool,
+	pub executable: String,
+	pub no_clobber: bool,
+	pub search_dirs: Vec<String>,
+	pub target_dir: String,
+	pub verbose: bool,
+	pub white_list: Vec<String>,
 }
 
 impl Settings {
@@ -142,12 +142,13 @@ impl Settings {
 		}
 
 		match matches.free.len() {
-			0 => return Result::Err(String::from("Missing required argument: EXECUTABLE")),
-			1 | 2 => {},
+			0 => return Result::Err(String::from("Failed to parse arguments")),
+			1 => return Result::Err(String::from("Missing required argument: EXECUTABLE")),
+			2 | 3 => {},
 			_ => return Result::Err(String::from("Unexpected extra arguments"))
 		}
 
-		let mut executable = PathBuf::from(matches.free.get(0).unwrap());
+		let mut executable = PathBuf::from(matches.free.get(1).unwrap());
 		if !executable.exists() {
 			return Result::Err(format!("File \"{}\" does not exist", executable.to_str().unwrap()));
 		}
@@ -160,8 +161,8 @@ impl Settings {
 
 		settings.executable = String::from(executable.to_str().unwrap());
 
-		if matches.free.len() == 2 {
-			let target_dir = PathBuf::from(matches.free.get(1).unwrap());
+		if matches.free.len() == 3 {
+			let target_dir = PathBuf::from(matches.free.get(2).unwrap());
 			match verify_dir(&target_dir) {
 				Some(msg) => return Result::Err(msg),
 				None => {},
