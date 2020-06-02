@@ -3,7 +3,7 @@ name = "copydeps"
 version = "5.0.0"
 authors = ["suve <veg@svgames.pl>"]
 edition = "2018"
-license = "GPLv3"
+license = "GPLv3+"
 repository = "https://github.com/suve/copydeps/"
 
 [profile.release]

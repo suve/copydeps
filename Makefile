@@ -15,11 +15,14 @@
 # this program (LICENCE.txt). If not, see <https://www.gnu.org/licenses/>.
 #
 
+DESTDIR ?=
+PREFIX ?= /usr/local
+
 SOURCES := Cargo.toml Cargo.lock $(shell ls src/*.rs)
 
 # -- variables end
 
-.PHONY = all clean debug
+.PHONY = all clean debug install
 
 all: build/copydeps
 
@@ -27,6 +30,12 @@ debug: build/copydeps-debug
 
 clean:
 	rm -rf build/
+
+install: all
+	install -m 755 -d "$(DESTDIR)$(PREFIX)/bin/"
+	install -m 755 -p ./build/copydeps "$(DESTDIR)$(PREFIX)/bin/copydeps"
+	install -m 755 -d "$(DESTDIR)$(PREFIX)/share/man/man1/"
+	install -m 644 -p ./copydeps.man "$(DESTDIR)$(PREFIX)/share/man/man1/copydeps.1"
 
 # -- PHONY targets end
 
