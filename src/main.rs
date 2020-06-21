@@ -14,11 +14,10 @@
  * You should have received a copy of the GNU General Public License along with
  * this program (LICENCE.txt). If not, see <https://www.gnu.org/licenses/>.
  */
-use std::fs;
 use std::process::exit;
 
-extern crate goblin;
-use goblin::Object;
+mod parser;
+use parser::get_deps;
 
 mod settings;
 use settings::Settings;
@@ -32,13 +31,8 @@ fn main() {
 		Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(1); }
 	};
 
-	let bytes = match fs::read(&settings.executable) {
-		Ok(bytes) => bytes,
-		Err(msg) => { eprintln!("{}: Failed to read file \"{}\": {}", PROGRAM_NAME, &settings.executable, msg); exit(1); }
-	};
-
-	let file = match Object::parse(&bytes) {
-		Ok(obj) => obj,
-		Err(msg) => { eprintln!("{}: Failed to parse file \"{}\": {}", PROGRAM_NAME, &settings.executable, msg); exit(1); }
+	let deps = match get_deps(&settings.executable) {
+		Ok(list) => list,
+		Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(2); }
 	};
 }
