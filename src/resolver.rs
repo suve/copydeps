@@ -18,9 +18,6 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
-extern crate goblin;
-use goblin::Object;
-
 use crate::parser::ObjectType;
 
 fn find_in_directory(name: &String, type_: &ObjectType, dir: &str) -> Option<String> {
@@ -64,7 +61,7 @@ pub fn resolve(name: &String, type_: &ObjectType) -> Option<String> {
 
 	for dir in search_paths {
 		match find_in_directory(&name, &type_, &dir) {
-			Some(s) => return Option::Some(s),
+			Some(resolved) => return Option::Some(format!("{}{}", dir, resolved)),
 			None => { /* do nothing */ }
 		}
 	}
