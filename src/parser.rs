@@ -33,7 +33,12 @@ fn get_deps_elf(elf: Elf) -> Result<Vec<String>, String>  {
 }
 
 fn get_deps_pe(exe: PE) -> Result<Vec<String>, String>  {
-	return Result::Err(String::from("get_deps_pe(): Not implemented yet"));
+	let mut list: Vec<String> = vec![];
+	for entry in exe.libraries {
+		list.push(String::from(entry));
+	}
+
+	return Result::Ok(list);
 }
 
 pub fn get_deps(filename: &String) -> Result<Vec<String>, String> {
