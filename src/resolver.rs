@@ -14,35 +14,28 @@
  * You should have received a copy of the GNU General Public License along with
  * this program (LICENCE.txt). If not, see <https://www.gnu.org/licenses/>.
  */
-use std::process::exit;
+use std::collections::HashMap;
+use std::path::PathBuf;
 
-mod parser;
-use parser::get_deps;
+extern crate goblin;
+use goblin::Object;
 
-mod resolver;
-use resolver::resolve;
+use crate::parser::ObjectType;
 
-mod settings;
-use settings::Settings;
-
-mod version;
-use version::*;
-
-fn main() {
-	let settings = match Settings::new_from_argv() {
-		Ok(s) => s,
-		Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(1); }
+pub fn resolve(name: &String, type_: &ObjectType) -> Option<String> {
+	let mut search_paths = match type_ {
+		ObjectType::Elf32 => vec!["/lib/", "/usr/lib/", "/usr/local/lib/"],
+		ObjectType::Elf64 => vec!["/lib64/", "/usr/lib64/", "/usr/local/lib64/"],
+		ObjectType::Exe32 => vec!["/usr/i686-w64-mingw32/sys-root/mingw/bin/"],
+		ObjectType::Exe64 => vec!["/usr/x86_64-w64-mingw32/sys-root/mingw/bin/"],
 	};
 
-	let executable = match get_deps(&settings.executable) {
-		Ok(obj) => obj,
-		Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(2); }
-	};
-
-	for entry in executable.deps {
-		match resolve(&entry, &executable.type_) {
-			Some(path) => { println!("\"{}\": {}", entry, path); }
-			None => { println!("\"{}\": (failed to resolve)", entry); }
+	for dir in search_paths {
+		let path = PathBuf::from(dir.to_owned() + &name);
+		if path.exists() {
+			return Option::Some(String::from(path.to_str().unwrap()));
 		}
 	}
+
+	return Option::None;
 }
