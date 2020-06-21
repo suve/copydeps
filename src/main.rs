@@ -31,12 +31,12 @@ fn main() {
 		Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(1); }
 	};
 
-	let deps = match get_deps(&settings.executable) {
-		Ok(list) => list,
+	let executable = match get_deps(&settings.executable) {
+		Ok(obj) => obj,
 		Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(2); }
 	};
 
-	for entry in deps {
+	for entry in executable.deps {
 		println!("- {}", entry);
 	}
 }

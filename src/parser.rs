@@ -19,44 +19,66 @@ use std::path::PathBuf;
 use std::vec::Vec;
 
 extern crate goblin;
-use goblin::Object;
+use goblin::Object as Goblin;
 use goblin::elf::Elf;
 use goblin::pe::PE;
 
-fn get_deps_elf(elf: Elf) -> Result<Vec<String>, String>  {
+pub enum ObjectType {
+	Elf32,
+	Elf64,
+	Exe32,
+	Exe64
+}
+
+pub struct Object {
+	pub type_: ObjectType,
+	pub deps: Vec<String>,
+}
+
+fn get_deps_elf(elf: Elf) -> Result<Object, String>  {
 	let mut list: Vec<String> = vec![];
 	for entry in elf.libraries {
 		list.push(String::from(entry));
 	}
 
-	return Result::Ok(list);
+	let type_ = if elf.is_64 { ObjectType::Elf64 } else { ObjectType::Elf32 };
+
+	return Result::Ok(Object{
+		type_: type_,
+		deps: list,
+	});
 }
 
-fn get_deps_pe(exe: PE) -> Result<Vec<String>, String>  {
+fn get_deps_pe(exe: PE) -> Result<Object, String>  {
 	let mut list: Vec<String> = vec![];
 	for entry in exe.libraries {
 		list.push(String::from(entry));
 	}
 
-	return Result::Ok(list);
+	let type_ = if exe.is_64 { ObjectType::Exe64 } else { ObjectType::Exe32 };
+
+	return Result::Ok(Object{
+		type_: type_,
+		deps: list,
+	});
 }
 
-pub fn get_deps(filename: &String) -> Result<Vec<String>, String> {
+pub fn get_deps(filename: &String) -> Result<Object, String> {
 	let bytes = match fs::read(filename) {
 		Ok(bytes) => bytes,
 		Err(msg) => { return Result::Err(format!("Failed to open file \"{}\": {}", filename, msg)); }
 	};
 
-	let object = match Object::parse(&bytes) {
+	let object = match Goblin::parse(&bytes) {
 		Ok(obj) => obj,
 		Err(msg) => { return Result::Err(format!("Failed to parse file \"{}\": {}", filename, msg)); }
 	};
 
 	match object {
-		Object::Elf(elf) => return get_deps_elf(elf),
-		Object::PE(pe) => return get_deps_pe(pe),
-		Object::Mach(_) => return Result::Err(format!("File \"{}\" is an unsupported object type \"Mach\"", filename)),
-		Object::Archive(_) => return Result::Err(format!("File \"{}\" is an unsupported object type \"Archive\"", filename)),
-		Object::Unknown(magic) => return Result::Err(format!("File \"{}\" is an unsupported object type (magic: {})", filename, magic)),
+		Goblin::Elf(elf) => return get_deps_elf(elf),
+		Goblin::PE(pe) => return get_deps_pe(pe),
+		Goblin::Mach(_) => return Result::Err(format!("File \"{}\" is an unsupported object type \"Mach\"", filename)),
+		Goblin::Archive(_) => return Result::Err(format!("File \"{}\" is an unsupported object type \"Archive\"", filename)),
+		Goblin::Unknown(magic) => return Result::Err(format!("File \"{}\" is an unsupported object type (magic: {})", filename, magic)),
 	}
 }
