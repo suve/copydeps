@@ -24,7 +24,12 @@ use goblin::elf::Elf;
 use goblin::pe::PE;
 
 fn get_deps_elf(elf: Elf) -> Result<Vec<String>, String>  {
-	return Result::Err(String::from("get_deps_elf(): Not implemented yet"));
+	let mut list: Vec<String> = vec![];
+	for entry in elf.libraries {
+		list.push(String::from(entry));
+	}
+
+	return Result::Ok(list);
 }
 
 fn get_deps_pe(exe: PE) -> Result<Vec<String>, String>  {

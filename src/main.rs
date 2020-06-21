@@ -35,4 +35,8 @@ fn main() {
 		Ok(list) => list,
 		Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(2); }
 	};
+
+	for entry in deps {
+		println!("- {}", entry);
+	}
 }
