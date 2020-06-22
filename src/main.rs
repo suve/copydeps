@@ -54,52 +54,65 @@ fn walk_deps_recursively(obj: &Object) -> HashMap<String, Status> {
 	return result;
 }
 
-fn print_deps(deps: &HashMap<String, Status>) {
-	for (key, val) in deps {
-		match val {
-			Status::Ignored => println!("\"{}\": (ignored)", key),
-			Status::FailedToResolve => println!("\"{}\": (failed to resolve)", key),
-			Status::Resolved(r) => println!("\"{}\": {}", key, r),
+fn dep_print(name: &String, status: &Status, settings: &Settings) -> bool {
+	match status {
+		Status::Ignored => println!("\"{}\": (ignored)", name),
+		Status::FailedToResolve => println!("\"{}\": (failed to resolve)", name),
+		Status::Resolved(r) => println!("\"{}\": {}", name, r),
+	}
+	return true;
+}
+
+fn dep_copy(name: &String, status: &Status, settings: &Settings) -> bool {
+	match status {
+		Status::Ignored => {
+			if settings.verbose {
+				println!("\"{}\": ignored, skipping", name)
+			}
+			return true;
+		},
+		Status::FailedToResolve => {
+			eprintln!("{}: failed to resolve \"{}\"", PROGRAM_NAME, name);
+			return false;
+		},
+		Status::Resolved(resolved) => {
+			let destination = PathBuf::from(format!("{}/{}", settings.target_dir, name));
+
+			if (settings.no_clobber) && (destination.exists()) {
+				if settings.verbose {
+					eprintln!("\"{}\": already exists in the target directory and --no-clobber was specified", name);
+				}
+				return true;
+			}
+
+			match fs::copy(resolved, &destination) {
+				Ok(_) => {
+					if settings.verbose {
+						println!("\"{}\": {} -> {}", name, resolved, destination.to_str().unwrap())
+					}
+					return true;
+				},
+				Err(err) => {
+					eprintln!("{}: failed to copy \"{}\": {}", PROGRAM_NAME, name, err);
+					return false;
+				},
+			}
 		}
 	}
 }
 
-fn copy_deps(deps: &HashMap<String, Status>, settings: &Settings) -> bool {
+type DepCallback = fn(name: &String, status: &Status, settings: &Settings) -> bool;
+
+fn process_deps(deps: &HashMap<String, Status>, callback: DepCallback, settings: &Settings) -> bool {
 	let mut all_ok = true;
 
-	for (key, val) in deps {
-		match val {
-			Status::Ignored => {
-				if settings.verbose {
-					println!("\"{}\": ignored, skipping", key)
-				}
-			},
-			Status::FailedToResolve => {
-				eprintln!("{}: failed to resolve \"{}\"", PROGRAM_NAME, key);
-				all_ok = false;
-			},
-			Status::Resolved(resolved) => {
-				let destination = PathBuf::from(format!("{}/{}", settings.target_dir, key));
+	let mut sorted_keys = deps.keys().collect::<Vec<&String>>();
+	sorted_keys.sort();
 
-				if (settings.no_clobber) && (destination.exists()) {
-					if settings.verbose {
-						eprintln!("\"{}\": already exists in the target directory and --no-clobber was specified", key);
-					}
-					continue;
-				}
-
-				match fs::copy(resolved, &destination) {
-					Ok(_) => {
-						if settings.verbose {
-							println!("\"{}\": {} -> {}", key, resolved, destination.to_str().unwrap())
-						}
-					},
-					Err(err) => {
-						eprintln!("{}: failed to copy \"{}\": {}", PROGRAM_NAME, key, err);
-						all_ok = false;
-					},
-				}
-			}
+	for key in sorted_keys {
+		let val = deps.get(key.as_str()).unwrap();
+		if !callback(&key, val, settings) {
+			all_ok = false;
 		}
 	}
 
@@ -118,10 +131,6 @@ fn main() {
 	};
 
 	let deps = walk_deps_recursively(&executable);
-	if settings.dry_run {
-		print_deps(&deps);
-		exit(0);
-	} else {
-		exit(if copy_deps(&deps, &settings) { 0 } else { 4 });
-	}
+	let status = process_deps(&deps, if settings.dry_run { dep_print } else { dep_copy }, &settings);
+	exit(if status { 0 } else { 4 });
 }
