@@ -14,10 +14,12 @@
  * You should have received a copy of the GNU General Public License along with
  * this program (LICENCE.txt). If not, see <https://www.gnu.org/licenses/>.
  */
+use std::collections::HashMap;
 use std::process::exit;
 
 mod parser;
 use parser::get_deps;
+use parser::Object;
 
 mod resolver;
 use resolver::resolve;
@@ -27,6 +29,37 @@ use settings::Settings;
 
 mod version;
 use version::*;
+
+enum Status {
+	Ignored,
+	FailedToResolve,
+	Resolved(String)
+}
+
+fn generate_dependency_list(obj: &Object) -> HashMap<String, Status> {
+	let mut result: HashMap<String, Status> = HashMap::new();
+
+	let mut unresolved: Vec<String> = obj.deps.clone();
+	while !unresolved.is_empty() {
+		let entry = unresolved.pop().unwrap();
+		if result.contains_key(entry.as_str()) { continue; }
+
+		match resolve(&entry, &obj.type_) {
+			Some(path) => {
+				match get_deps(&path) {
+					Ok(mut sub_obj) => { unresolved.append(&mut sub_obj.deps); },
+					Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(3); }
+				}
+				result.insert(entry, Status::Resolved(path));
+			},
+			None => {
+				result.insert(entry, Status::FailedToResolve);
+			}
+		}
+	}
+
+	return result;
+}
 
 fn main() {
 	let settings = match Settings::new_from_argv() {
@@ -39,10 +72,12 @@ fn main() {
 		Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(2); }
 	};
 
-	for entry in executable.deps {
-		match resolve(&entry, &executable.type_) {
-			Some(path) => { println!("\"{}\": {}", entry, path); }
-			None => { println!("\"{}\": (failed to resolve)", entry); }
+	let deps = generate_dependency_list(&executable);
+	for (key, val) in deps {
+		match val {
+			Status::Ignored => println!("\"{}\": (ignored)", key),
+			Status::FailedToResolve => println!("\"{}\": (failed to resolve)", key),
+			Status::Resolved(r) => println!("\"{}\": {}", key, r),
 		}
 	}
 }
