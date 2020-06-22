@@ -185,7 +185,7 @@ impl Settings {
 		if matches.opt_present("no-clobber") {
 			settings.no_clobber = true;
 		}
-		if matches.opt_present("no-clobber") {
+		if matches.opt_present("verbose") {
 			settings.verbose = true;
 		}
 
