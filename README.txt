@@ -15,24 +15,24 @@ Usage: copydeps [options...] EXECUTABLE [TARGET-DIR]
   When omitted, defaults to the directory of the target executable.
 
 Program options:
---blacklist PATTERN
-  Add PATTERN to the built-in blacklist (.so / .dll names that should not
-  be resolved nor copied over).
 --dry-run
   Print the list of dependencies without actually copying the .so / .dll files.
 --exedir
   Include the directory of the executable in the .so / .dll resolve paths.
-  Files found in the exedir are preferred over those in system paths.
+  Files found in the exedir are preferred over those found anywhere else.
+--ignore PATTERN
+  Add PATTERN to the built-in ignore-list (.so / .dll names that should not
+  be resolved nor copied over).
 --no-clobber
   Do not overwrite .so / .dll files already existing in the target directory.
+--override PATTERN
+  Add PATTERN to the override-list (.so / .dll names that should always be resolved
+  and copied over). Overrides take precedence over ignores.
 --search-dir DIRECTORY
   Add DIRECTORY to the list of paths to search when resolving .so / .dll names.
   User-specified directories take precedence over system paths.
 --verbose
   Print the names of the dependencies as they're being copied over.
---whitelist PATTERN
-  Add PATTERN to the whitelist (.so / .dll names that should always be resolved
-  and copied over). The whitelist takes precedence over the blacklist.
 
 
 Dependencies:

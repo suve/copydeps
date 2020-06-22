@@ -44,24 +44,25 @@ fn print_help() {
 			"When omitted, defaults to the directory of the target executable.\n",
 			"\n",
 			"Program options:\n",
-			"--blacklist PATTERN\n",
-			"  Add PATTERN to the built-in blacklist (.so / .dll names that should not\n",
-			"  be resolved nor copied over).\n",
 			"--dry-run\n",
 			"  Print the list of dependencies without actually copying the .so / .dll files.\n",
 			"--exedir\n",
 			"  Include the directory of the executable in the .so / .dll resolve paths.\n",
-			"  Files found in the exedir are preferred over those in system paths.\n",
+			"  Files found in the exedir are preferred over those found anywhere else.\n",
+			"--ignore PATTERN\n",
+			"  Add PATTERN to the built-in ignore-list (.so / .dll names that should not\n",
+			"  be resolved nor copied over).\n",
 			"--no-clobber\n",
 			"  Do not overwrite .so / .dll files already existing in the target directory.\n",
+			"--override PATTERN\n",
+			"  Add PATTERN to the override-list (.so / .dll names that should always be\n",
+			"  resolved and copied over). Overrides have precedence over ignores.\n",
 			"--search-dir DIRECTORY\n",
 			"  Add DIRECTORY to the list of paths to search when resolving .so / .dll names.\n",
 			"  User-specified directories take precedence over system paths.\n",
 			"--verbose\n",
 			"  Print the names of the dependencies as they're being copied over.\n",
-			"--whitelist PATTERN\n",
-			"  Add PATTERN to the whitelist (.so / .dll names that should always be\n",
-			"  resolved and copied over). The whitelist has precedence over the blacklist.\n"
+			""
 		),
 		AUTHOR = PROGRAM_AUTHOR,
 		NAME = PROGRAM_NAME,
@@ -81,27 +82,27 @@ fn verify_dir(dir: &PathBuf) -> Option<String> {
 
 
 pub struct Settings {
-	pub black_list: Vec<String>,
 	pub dry_run: bool,
 	pub executable: String,
+	pub ignore_list: Vec<String>,
 	pub no_clobber: bool,
+	pub override_list: Vec<String>,
 	pub search_dirs: Vec<String>,
 	pub target_dir: String,
 	pub verbose: bool,
-	pub white_list: Vec<String>,
 }
 
 impl Settings {
 	pub fn new() -> Settings {
 		return Settings {
-			black_list: vec![],
 			dry_run: false,
 			executable: String::from(""),
+			ignore_list: vec![],
 			no_clobber: false,
+			override_list: vec![],
 			search_dirs: vec![],
 			target_dir: String::from(""),
 			verbose: false,
-			white_list: vec![],
 		};
 	}
 
@@ -116,9 +117,14 @@ impl Settings {
 		opts.optflag("", "help", "");
 		opts.optflag("", "version", "");
 
+		opts.optmulti("", "ignore", "", "");
+		opts.optmulti("", "override", "", "");
+
+		// Deprecated names for --ignore and --override. Present for backwards-compatibility.
 		opts.optmulti("", "blacklist", "", "");
-		opts.optmulti("", "search-dir", "", "");
 		opts.optmulti("", "whitelist", "", "");
+
+		opts.optmulti("", "search-dir", "", "");
 
 		opts.optflag("", "dry-run", "");
 		opts.optflag("", "exedir", "");
@@ -172,9 +178,13 @@ impl Settings {
 			settings.target_dir = String::from(executable_dir.to_str().unwrap());
 		}
 
-		settings.black_list = matches.opt_strs("blacklist");
+		settings.ignore_list = matches.opt_strs("ignore");
+		settings.ignore_list.append(matches.opt_strs("blacklist").as_mut());
+
+		settings.override_list = matches.opt_strs( "override");
+		settings.override_list.append(matches.opt_strs("whitelist").as_mut());
+
 		settings.search_dirs = matches.opt_strs("search-dir");
-		settings.white_list = matches.opt_strs("whitelist");
 
 		if matches.opt_present("dry-run") {
 			settings.dry_run = true;
