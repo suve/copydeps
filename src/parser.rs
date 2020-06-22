@@ -15,7 +15,6 @@
  * this program (LICENCE.txt). If not, see <https://www.gnu.org/licenses/>.
  */
 use std::fs;
-use std::path::PathBuf;
 use std::vec::Vec;
 
 extern crate goblin;
@@ -35,32 +34,18 @@ pub struct Object {
 	pub deps: Vec<String>,
 }
 
-fn get_deps_elf(elf: Elf) -> Result<Object, String>  {
-	let mut list: Vec<String> = vec![];
-	for entry in elf.libraries {
-		list.push(String::from(entry));
-	}
-
-	let type_ = if elf.is_64 { ObjectType::Elf64 } else { ObjectType::Elf32 };
-
-	return Result::Ok(Object{
-		type_: type_,
-		deps: list,
-	});
+fn get_deps_elf(elf: Elf) -> Object {
+	return Object {
+		type_: if elf.is_64 { ObjectType::Elf64 } else { ObjectType::Elf32 },
+		deps: elf.libraries.iter().map(|item| String::from(*item)).collect()
+	};
 }
 
-fn get_deps_pe(exe: PE) -> Result<Object, String>  {
-	let mut list: Vec<String> = vec![];
-	for entry in exe.libraries {
-		list.push(String::from(entry));
-	}
-
-	let type_ = if exe.is_64 { ObjectType::Exe64 } else { ObjectType::Exe32 };
-
-	return Result::Ok(Object{
-		type_: type_,
-		deps: list,
-	});
+fn get_deps_pe(exe: PE) -> Object {
+	return Object {
+		type_: if exe.is_64 { ObjectType::Exe64 } else { ObjectType::Exe32 },
+		deps: exe.libraries.iter().map(|item| String::from(*item)).collect()
+	};
 }
 
 pub fn get_deps(filename: &String) -> Result<Object, String> {
@@ -75,8 +60,8 @@ pub fn get_deps(filename: &String) -> Result<Object, String> {
 	};
 
 	match object {
-		Goblin::Elf(elf) => return get_deps_elf(elf),
-		Goblin::PE(pe) => return get_deps_pe(pe),
+		Goblin::Elf(elf) => return Result::Ok(get_deps_elf(elf)),
+		Goblin::PE(pe) => return Result::Ok(get_deps_pe(pe)),
 		Goblin::Mach(_) => return Result::Err(format!("File \"{}\" is an unsupported object type \"Mach\"", filename)),
 		Goblin::Archive(_) => return Result::Err(format!("File \"{}\" is an unsupported object type \"Archive\"", filename)),
 		Goblin::Unknown(magic) => return Result::Err(format!("File \"{}\" is an unsupported object type (magic: {})", filename, magic)),
