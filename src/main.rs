@@ -16,7 +16,6 @@
  */
 use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf;
 use std::process::exit;
 
 mod parser;
@@ -54,11 +53,11 @@ fn walk_deps_recursively(obj: &Object, settings: &Settings) -> HashMap<String, S
 	return result;
 }
 
-fn dep_print(name: &String, status: &Status, settings: &Settings) -> bool {
+fn dep_print(name: &String, status: &Status, _settings: &Settings) -> bool {
 	match status {
 		Status::Ignored => println!("\"{}\": (ignored)", name),
 		Status::FailedToResolve => println!("\"{}\": (failed to resolve)", name),
-		Status::Resolved(r) => println!("\"{}\": {}", name, r),
+		Status::Resolved(r) => println!("\"{}\": {}", name, r.to_string_lossy()),
 	}
 	return true;
 }
@@ -76,7 +75,8 @@ fn dep_copy(name: &String, status: &Status, settings: &Settings) -> bool {
 			return false;
 		},
 		Status::Resolved(resolved) => {
-			let destination = PathBuf::from(format!("{}/{}", settings.target_dir, name));
+			let mut destination = settings.target_dir.clone();
+			destination.push(name);
 
 			if (settings.no_clobber) && (destination.exists()) {
 				if settings.verbose {
@@ -88,7 +88,7 @@ fn dep_copy(name: &String, status: &Status, settings: &Settings) -> bool {
 			match fs::copy(resolved, &destination) {
 				Ok(_) => {
 					if settings.verbose {
-						println!("\"{}\": {} -> {}", name, resolved, destination.to_str().unwrap())
+						println!("\"{}\": {} -> {}", name, resolved.to_string_lossy(), destination.to_string_lossy())
 					}
 					return true;
 				},

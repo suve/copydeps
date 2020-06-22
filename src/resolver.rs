@@ -15,6 +15,7 @@
  * this program (LICENCE.txt). If not, see <https://www.gnu.org/licenses/>.
  */
 use std::fs;
+use std::path::Path;
 use std::path::PathBuf;
 
 use crate::parser::ObjectType;
@@ -23,14 +24,16 @@ use crate::settings::Settings;
 pub enum Status {
 	Ignored,
 	FailedToResolve,
-	Resolved(String)
+	Resolved(PathBuf)
 }
 
-fn find_in_directory(name: &String, type_: &ObjectType, dir: &str) -> Option<String> {
+fn find_in_directory(name: &String, type_: &ObjectType, dir: &Path) -> Option<String> {
 	match type_ {
 		// With ELF, look for an exact match.
 		ObjectType::Elf32 | ObjectType::Elf64 => {
-			let filepath = PathBuf::from(dir.to_owned() + name);
+			let mut filepath = PathBuf::from(dir);
+			filepath.push(name);
+
 			if filepath.exists() {
 				return Option::Some(name.parse().unwrap())
 			}
@@ -117,8 +120,12 @@ pub fn resolve(name: &String, type_: &ObjectType, settings: &Settings) -> Status
 	}
 
 	for dir in &settings.search_dirs {
-		match find_in_directory(&name, &type_, dir.as_str()) {
-			Some(resolved) => return Status::Resolved(format!("{}{}", dir, resolved)),
+		match find_in_directory(&name, &type_, dir.as_path()) {
+			Some(resolved) => {
+				let mut path = dir.clone();
+				path.push(resolved);
+				return Status::Resolved(path);
+			},
 			None => { /* do nothing */ }
 		}
 	}
@@ -131,8 +138,12 @@ pub fn resolve(name: &String, type_: &ObjectType, settings: &Settings) -> Status
 	};
 
 	for dir in search_paths {
-		match find_in_directory(&name, &type_, &dir) {
-			Some(resolved) => return Status::Resolved(format!("{}{}", dir, resolved)),
+		match find_in_directory(&name, &type_, &Path::new(dir)) {
+			Some(resolved) => {
+				let mut path = PathBuf::from(dir);
+				path.push(resolved);
+				return Status::Resolved(path);
+			},
 			None => { /* do nothing */ }
 		}
 	}

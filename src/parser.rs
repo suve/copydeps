@@ -15,6 +15,7 @@
  * this program (LICENCE.txt). If not, see <https://www.gnu.org/licenses/>.
  */
 use std::fs;
+use std::path::Path;
 use std::vec::Vec;
 
 extern crate goblin;
@@ -48,22 +49,22 @@ fn get_deps_pe(exe: PE) -> Object {
 	};
 }
 
-pub fn get_deps(filename: &String) -> Result<Object, String> {
+pub fn get_deps(filename: &Path) -> Result<Object, String> {
 	let bytes = match fs::read(filename) {
 		Ok(bytes) => bytes,
-		Err(msg) => { return Result::Err(format!("Failed to open file \"{}\": {}", filename, msg)); }
+		Err(msg) => { return Result::Err(format!("Failed to open file \"{}\": {}", filename.to_string_lossy(), msg)); }
 	};
 
 	let object = match Goblin::parse(&bytes) {
 		Ok(obj) => obj,
-		Err(msg) => { return Result::Err(format!("Failed to parse file \"{}\": {}", filename, msg)); }
+		Err(msg) => { return Result::Err(format!("Failed to parse file \"{}\": {}", filename.to_string_lossy(), msg)); }
 	};
 
 	match object {
 		Goblin::Elf(elf) => return Result::Ok(get_deps_elf(elf)),
 		Goblin::PE(pe) => return Result::Ok(get_deps_pe(pe)),
-		Goblin::Mach(_) => return Result::Err(format!("File \"{}\" is an unsupported object type \"Mach\"", filename)),
-		Goblin::Archive(_) => return Result::Err(format!("File \"{}\" is an unsupported object type \"Archive\"", filename)),
-		Goblin::Unknown(magic) => return Result::Err(format!("File \"{}\" is an unsupported object type (magic: {})", filename, magic)),
+		Goblin::Mach(_) => return Result::Err(format!("File \"{}\" is an unsupported object type \"Mach\"", filename.to_string_lossy())),
+		Goblin::Archive(_) => return Result::Err(format!("File \"{}\" is an unsupported object type \"Archive\"", filename.to_string_lossy())),
+		Goblin::Unknown(magic) => return Result::Err(format!("File \"{}\" is an unsupported object type (magic: {})", filename.to_string_lossy(), magic)),
 	}
 }

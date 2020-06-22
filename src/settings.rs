@@ -83,12 +83,12 @@ fn verify_dir(dir: &PathBuf) -> Option<String> {
 
 pub struct Settings {
 	pub dry_run: bool,
-	pub executable: String,
+	pub executable: PathBuf,
 	pub ignore_list: Vec<String>,
 	pub no_clobber: bool,
 	pub override_list: Vec<String>,
-	pub search_dirs: Vec<String>,
-	pub target_dir: String,
+	pub search_dirs: Vec<PathBuf>,
+	pub target_dir: PathBuf,
 	pub verbose: bool,
 }
 
@@ -96,12 +96,12 @@ impl Settings {
 	pub fn new() -> Settings {
 		return Settings {
 			dry_run: false,
-			executable: String::from(""),
+			executable: PathBuf::new(),
 			ignore_list: vec![],
 			no_clobber: false,
 			override_list: vec![],
 			search_dirs: vec![],
-			target_dir: String::from(""),
+			target_dir: PathBuf::new(),
 			verbose: false,
 		};
 	}
@@ -154,7 +154,7 @@ impl Settings {
 			_ => return Result::Err(String::from("Unexpected extra arguments"))
 		}
 
-		let mut executable = PathBuf::from(matches.free.get(1).unwrap());
+		let executable = PathBuf::from(matches.free.get(1).unwrap());
 		if !executable.exists() {
 			return Result::Err(format!("File \"{}\" does not exist", executable.to_str().unwrap()));
 		}
@@ -162,10 +162,11 @@ impl Settings {
 			return Result::Err(format!("File \"{}\" is not a regular file", executable.to_str().unwrap()));
 		}
 
-		executable = executable.canonicalize().unwrap();
-		let executable_dir = executable.parent().unwrap();
-
-		settings.executable = String::from(executable.to_str().unwrap());
+		settings.executable = match executable.canonicalize() {
+			Ok(pb) => pb,
+			Err(msg) => return Result::Err(format!("Failed to canonicalize path \"{}\": {}", executable.to_string_lossy(), msg))
+		};
+		let executable_dir = settings.executable.parent().unwrap().to_path_buf();
 
 		if matches.free.len() == 3 {
 			let target_dir = PathBuf::from(matches.free.get(2).unwrap());
@@ -173,9 +174,12 @@ impl Settings {
 				Some(msg) => return Result::Err(msg),
 				None => {},
 			}
-			settings.target_dir = String::from(target_dir.canonicalize().unwrap().to_str().unwrap());
+			settings.target_dir = match target_dir.canonicalize() {
+				Ok(pb) => pb,
+				Err(msg) => return Result::Err(format!("Failed to canonicalize path \"{}\": {}", target_dir.to_string_lossy(), msg))
+			};
 		} else {
-			settings.target_dir = String::from(executable_dir.to_str().unwrap());
+			settings.target_dir = executable_dir.clone();
 		}
 
 		settings.ignore_list = matches.opt_strs("ignore");
@@ -184,13 +188,13 @@ impl Settings {
 		settings.override_list = matches.opt_strs( "override");
 		settings.override_list.append(matches.opt_strs("whitelist").as_mut());
 
-		settings.search_dirs = matches.opt_strs("search-dir");
+		settings.search_dirs = matches.opt_strs("search-dir").iter().map(|item| PathBuf::from(item)).collect();
 
 		if matches.opt_present("dry-run") {
 			settings.dry_run = true;
 		}
 		if matches.opt_present("exedir") {
-			settings.search_dirs.push(String::from(executable_dir.to_str().unwrap()));
+			settings.search_dirs.push(executable_dir.clone());
 		}
 		if matches.opt_present("no-clobber") {
 			settings.no_clobber = true;
