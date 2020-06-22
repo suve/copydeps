@@ -33,7 +33,7 @@ use settings::Settings;
 mod version;
 use version::*;
 
-fn walk_deps_recursively(obj: &Object) -> HashMap<String, Status> {
+fn walk_deps_recursively(obj: &Object, settings: &Settings) -> HashMap<String, Status> {
 	let mut result: HashMap<String, Status> = HashMap::new();
 
 	let mut unresolved: Vec<String> = obj.deps.clone();
@@ -41,7 +41,7 @@ fn walk_deps_recursively(obj: &Object) -> HashMap<String, Status> {
 		let entry = unresolved.pop().unwrap();
 		if result.contains_key(entry.as_str()) { continue; }
 
-		let status = resolve(&entry, &obj.type_);
+		let status = resolve(&entry, &obj.type_, settings);
 		if let Status::Resolved(path) = &status {
 			match get_deps(&path) {
 				Ok(mut sub_obj) => { unresolved.append(&mut sub_obj.deps); },
@@ -130,7 +130,7 @@ fn main() {
 		Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(2); }
 	};
 
-	let deps = walk_deps_recursively(&executable);
+	let deps = walk_deps_recursively(&executable, &settings);
 	let status = process_deps(&deps, if settings.dry_run { dep_print } else { dep_copy }, &settings);
 	exit(if status { 0 } else { 4 });
 }

@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License along with
  * this program (LICENCE.txt). If not, see <https://www.gnu.org/licenses/>.
  */
-use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
 use crate::parser::ObjectType;
+use crate::settings::Settings;
 
 pub enum Status {
 	Ignored,
@@ -57,8 +57,35 @@ fn find_in_directory(name: &String, type_: &ObjectType, dir: &str) -> Option<Str
 	return Option::None;
 }
 
-fn exists_in_ignore_list(name: &String, type_: &ObjectType) -> bool {
-	let mut ignore_list = match type_ {
+fn exists_in_list(name: &String, type_: &ObjectType, list: &Vec<&str>) -> bool {
+	match type_ {
+		// Use exact match for .so
+		ObjectType::Elf32 | ObjectType::Elf64 => {
+			for entry in list {
+				if name == entry {
+					return true;
+				}
+			}
+		},
+		// Perform case-insensitive matching for .dll
+		ObjectType::Exe32 | ObjectType::Exe64 => {
+			for entry in list {
+				if name.eq_ignore_ascii_case(entry) {
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+fn exists_in_ignore_list(name: &String, type_: &ObjectType, settings: &Settings) -> bool {
+	if exists_in_list(name, type_, &settings.ignore_list.iter().map(|item| item.as_str()).collect()) {
+		return true;
+	}
+
+	let ignore_list = match type_ {
 		ObjectType::Elf32 => vec![
 			"ld-linux.so"
 		],
@@ -79,35 +106,17 @@ fn exists_in_ignore_list(name: &String, type_: &ObjectType) -> bool {
 			"WINMM.dll", "WS2_32.dll"
 		],
 	};
+	return exists_in_list(name, type_, &ignore_list);
+}
 
-	match type_ {
-		// Use exact match for .so
-		ObjectType::Elf32 | ObjectType::Elf64 => {
-			for entry in ignore_list {
-				if name == entry {
-					return true;
-				}
-			}
-		},
-		// Perform case-insensitive matching for .dll
-		ObjectType::Exe32 | ObjectType::Exe64 => {
-			for entry in ignore_list {
-				if name.eq_ignore_ascii_case(entry) {
-					return true;
-				}
-			}
+pub fn resolve(name: &String, type_: &ObjectType, settings: &Settings) -> Status {
+	if !exists_in_list(name, type_, &settings.override_list.iter().map(|item| item.as_str()).collect()) {
+		if exists_in_ignore_list(name, type_, settings) {
+			return Status::Ignored;
 		}
 	}
 
-	return false;
-}
-
-pub fn resolve(name: &String, type_: &ObjectType) -> Status {
-	if exists_in_ignore_list(name, type_) {
-		return Status::Ignored;
-	}
-
-	let mut search_paths = match type_ {
+	let search_paths = match type_ {
 		ObjectType::Elf32 => vec!["/lib/", "/usr/lib/", "/usr/local/lib/"],
 		ObjectType::Elf64 => vec!["/lib64/", "/usr/lib64/", "/usr/local/lib64/"],
 		ObjectType::Exe32 => vec!["/usr/i686-w64-mingw32/sys-root/mingw/bin/"],
