@@ -18,10 +18,11 @@ use std::collections::HashMap;
 use std::process::exit;
 
 mod parser;
-use parser::get_deps;
 use parser::Object;
+use parser::get_deps;
 
 mod resolver;
+use resolver::Status;
 use resolver::resolve;
 
 mod settings;
@@ -29,12 +30,6 @@ use settings::Settings;
 
 mod version;
 use version::*;
-
-enum Status {
-	Ignored,
-	FailedToResolve,
-	Resolved(String)
-}
 
 fn generate_dependency_list(obj: &Object) -> HashMap<String, Status> {
 	let mut result: HashMap<String, Status> = HashMap::new();
@@ -44,18 +39,14 @@ fn generate_dependency_list(obj: &Object) -> HashMap<String, Status> {
 		let entry = unresolved.pop().unwrap();
 		if result.contains_key(entry.as_str()) { continue; }
 
-		match resolve(&entry, &obj.type_) {
-			Some(path) => {
-				match get_deps(&path) {
-					Ok(mut sub_obj) => { unresolved.append(&mut sub_obj.deps); },
-					Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(3); }
-				}
-				result.insert(entry, Status::Resolved(path));
-			},
-			None => {
-				result.insert(entry, Status::FailedToResolve);
+		let status = resolve(&entry, &obj.type_);
+		if let Status::Resolved(path) = &status {
+			match get_deps(&path) {
+				Ok(mut sub_obj) => { unresolved.append(&mut sub_obj.deps); },
+				Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(3); }
 			}
 		}
+		result.insert(entry, status);
 	}
 
 	return result;

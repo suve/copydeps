@@ -20,6 +20,12 @@ use std::path::PathBuf;
 
 use crate::parser::ObjectType;
 
+pub enum Status {
+	Ignored,
+	FailedToResolve,
+	Resolved(String)
+}
+
 fn find_in_directory(name: &String, type_: &ObjectType, dir: &str) -> Option<String> {
 	match type_ {
 		// With ELF, look for an exact match.
@@ -51,7 +57,56 @@ fn find_in_directory(name: &String, type_: &ObjectType, dir: &str) -> Option<Str
 	return Option::None;
 }
 
-pub fn resolve(name: &String, type_: &ObjectType) -> Option<String> {
+fn exists_in_ignore_list(name: &String, type_: &ObjectType) -> bool {
+	let mut ignore_list = match type_ {
+		ObjectType::Elf32 => vec![
+			"ld-linux.so"
+		],
+		ObjectType::Elf64 => vec![
+			"ld-linux-x86-64.so"
+		],
+		ObjectType::Exe32 | ObjectType::Exe64 => vec![
+			"ADVAPI32.dll",
+			"CRYPT32.dll",
+			"GDI32.dll",
+			"IMM32.dll",
+			"KERNEL32.dll",
+			"msvcrt.dll",
+			"ole32.dll", "OLEAUT32.dll",
+			"SETUPAPI.dll", "SHELL32.dll",
+			"USER32.dll",
+			"VERSION.dll",
+			"WINMM.dll", "WS2_32.dll"
+		],
+	};
+
+	match type_ {
+		// Use exact match for .so
+		ObjectType::Elf32 | ObjectType::Elf64 => {
+			for entry in ignore_list {
+				if name == entry {
+					return true;
+				}
+			}
+		},
+		// Perform case-insensitive matching for .dll
+		ObjectType::Exe32 | ObjectType::Exe64 => {
+			for entry in ignore_list {
+				if name.eq_ignore_ascii_case(entry) {
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+pub fn resolve(name: &String, type_: &ObjectType) -> Status {
+	if exists_in_ignore_list(name, type_) {
+		return Status::Ignored;
+	}
+
 	let mut search_paths = match type_ {
 		ObjectType::Elf32 => vec!["/lib/", "/usr/lib/", "/usr/local/lib/"],
 		ObjectType::Elf64 => vec!["/lib64/", "/usr/lib64/", "/usr/local/lib64/"],
@@ -61,10 +116,10 @@ pub fn resolve(name: &String, type_: &ObjectType) -> Option<String> {
 
 	for dir in search_paths {
 		match find_in_directory(&name, &type_, &dir) {
-			Some(resolved) => return Option::Some(format!("{}{}", dir, resolved)),
+			Some(resolved) => return Status::Resolved(format!("{}{}", dir, resolved)),
 			None => { /* do nothing */ }
 		}
 	}
 
-	return Option::None;
+	return Status::FailedToResolve;
 }
