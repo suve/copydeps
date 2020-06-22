@@ -116,6 +116,13 @@ pub fn resolve(name: &String, type_: &ObjectType, settings: &Settings) -> Status
 		}
 	}
 
+	for dir in &settings.search_dirs {
+		match find_in_directory(&name, &type_, dir.as_str()) {
+			Some(resolved) => return Status::Resolved(format!("{}{}", dir, resolved)),
+			None => { /* do nothing */ }
+		}
+	}
+
 	let search_paths = match type_ {
 		ObjectType::Elf32 => vec!["/lib/", "/usr/lib/", "/usr/local/lib/"],
 		ObjectType::Elf64 => vec!["/lib64/", "/usr/lib64/", "/usr/local/lib64/"],
