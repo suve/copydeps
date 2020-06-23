@@ -23,6 +23,10 @@ extern crate getopts;
 use getopts::Options;
 use getopts::ParsingStyle;
 
+extern crate regex;
+use regex::RegexSet;
+use regex::RegexSetBuilder;
+
 use crate::version::*;
 
 fn print_help() {
@@ -50,7 +54,7 @@ fn print_help() {
 			"  Include the directory of the executable in the .so / .dll resolve paths.\n",
 			"  Files found in the exedir are preferred over those found anywhere else.\n",
 			"--ignore PATTERN\n",
-			"  Add PATTERN to the built-in ignore-list (.so / .dll names that should not\n",
+			"  Add PATTERN to the ignore-list (.so / .dll names that should not\n",
 			"  be resolved nor copied over).\n",
 			"--no-clobber\n",
 			"  Do not overwrite .so / .dll files already existing in the target directory.\n",
@@ -84,25 +88,32 @@ fn verify_dir(dir: &PathBuf) -> Option<String> {
 pub struct Settings {
 	pub dry_run: bool,
 	pub executable: PathBuf,
-	pub ignore_list: Vec<String>,
+	pub ignore_list: RegexSet,
 	pub no_clobber: bool,
-	pub override_list: Vec<String>,
+	pub override_list: RegexSet,
 	pub search_dirs: Vec<PathBuf>,
 	pub target_dir: PathBuf,
 	pub verbose: bool,
+
+	ignore_list_str: Vec<String>,
+	override_list_str: Vec<String>,
 }
 
 impl Settings {
 	pub fn new() -> Settings {
+		let empty_vector: Vec<&str> = vec![];
 		return Settings {
 			dry_run: false,
 			executable: PathBuf::new(),
-			ignore_list: vec![],
+			ignore_list: RegexSet::new(&empty_vector).unwrap(),
 			no_clobber: false,
-			override_list: vec![],
+			override_list: RegexSet::new(&empty_vector).unwrap(),
 			search_dirs: vec![],
 			target_dir: PathBuf::new(),
 			verbose: false,
+
+			ignore_list_str: vec![],
+			override_list_str: vec![],
 		};
 	}
 
@@ -182,11 +193,11 @@ impl Settings {
 			settings.target_dir = executable_dir.clone();
 		}
 
-		settings.ignore_list = matches.opt_strs("ignore");
-		settings.ignore_list.append(matches.opt_strs("blacklist").as_mut());
+		settings.ignore_list_str = matches.opt_strs("ignore");
+		settings.ignore_list_str.append(matches.opt_strs("blacklist").as_mut());
 
-		settings.override_list = matches.opt_strs( "override");
-		settings.override_list.append(matches.opt_strs("whitelist").as_mut());
+		settings.override_list_str = matches.opt_strs( "override");
+		settings.override_list_str.append(matches.opt_strs("whitelist").as_mut());
 
 		settings.search_dirs = matches.opt_strs("search-dir").iter().map(|item| PathBuf::from(item)).collect();
 
@@ -204,5 +215,22 @@ impl Settings {
 		}
 
 		return Result::Ok(settings);
+	}
+
+	pub fn compile_lists(&mut self, case_insensitive: bool) -> Option<String> {
+		self.ignore_list = match RegexSetBuilder::new(&self.ignore_list_str).case_insensitive(case_insensitive).build() {
+			Result::Ok(rs) => rs,
+			Result::Err(err) => {
+				return Option::Some(format!("Error while processing ignore-list patterns: {}", err));
+			}
+		};
+		self.override_list = match RegexSetBuilder::new(&self.override_list_str).case_insensitive(case_insensitive).build() {
+			Result::Ok(rs) => rs,
+			Result::Err(err) => {
+				return Option::Some(format!("Error while processing override-list patterns: {}", err));
+			}
+		};
+
+		return Option::None;
 	}
 }

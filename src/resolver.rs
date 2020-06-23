@@ -18,8 +18,12 @@ use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 
+extern crate regex;
+use regex::RegexSetBuilder;
+
 use crate::parser::ObjectType;
 use crate::settings::Settings;
+use crate::version::PROGRAM_NAME;
 
 pub enum Status {
 	Ignored,
@@ -60,60 +64,46 @@ fn find_in_directory(name: &String, type_: &ObjectType, dir: &Path) -> Option<St
 	return Option::None;
 }
 
-fn exists_in_list(name: &String, type_: &ObjectType, list: &Vec<&str>) -> bool {
-	match type_ {
-		// Use exact match for .so
-		ObjectType::Elf32 | ObjectType::Elf64 => {
-			for entry in list {
-				if name == entry {
-					return true;
-				}
-			}
-		},
-		// Perform case-insensitive matching for .dll
-		ObjectType::Exe32 | ObjectType::Exe64 => {
-			for entry in list {
-				if name.eq_ignore_ascii_case(entry) {
-					return true;
-				}
-			}
-		}
-	}
-
-	return false;
-}
-
 fn exists_in_ignore_list(name: &String, type_: &ObjectType, settings: &Settings) -> bool {
-	if exists_in_list(name, type_, &settings.ignore_list.iter().map(|item| item.as_str()).collect()) {
+	if settings.ignore_list.is_match(name) {
 		return true;
 	}
 
 	let ignore_list = match type_ {
-		ObjectType::Elf32 => vec![
-			"ld-linux.so"
-		],
-		ObjectType::Elf64 => vec![
-			"ld-linux-x86-64.so"
-		],
-		ObjectType::Exe32 | ObjectType::Exe64 => vec![
-			"ADVAPI32.dll",
-			"CRYPT32.dll",
-			"GDI32.dll",
-			"IMM32.dll",
-			"KERNEL32.dll",
-			"msvcrt.dll",
-			"ole32.dll", "OLEAUT32.dll",
-			"SETUPAPI.dll", "SHELL32.dll",
-			"USER32.dll",
-			"VERSION.dll",
-			"WINMM.dll", "WS2_32.dll"
-		],
+		ObjectType::Elf32 => RegexSetBuilder::new(vec![
+			r"ld-linux\.so*"
+		]).build(),
+		ObjectType::Elf64 => RegexSetBuilder::new(vec![
+			r"ld-linux-x86-64\.so*"
+		]).build(),
+		ObjectType::Exe32 | ObjectType::Exe64 => RegexSetBuilder::new(vec![
+			r"^ADVAPI32\.dll$",
+			r"^CRYPT32\.dll$",
+			r"^GDI32\.dll$",
+			r"^IMM32\.dll$",
+			r"^KERNEL32\.dll$",
+			r"^msvcrt\.dll$",
+			r"^ole32\.dll$", r"^OLEAUT32\.dll$",
+			r"^SETUPAPI\.dll$", r"^SHELL32\.dll$",
+			r"^USER32\.dll$",
+			r"^VERSION\.dll$",
+			r"^WINMM\.dll$", r"^WS2_32\.dll$"
+		]).case_insensitive(true).build(),
 	};
-	return exists_in_list(name, type_, &ignore_list);
+
+	match ignore_list {
+		Err(err) => {
+			eprintln!("{}: internal error: failed to compile ignore-list regular expressions: {}", PROGRAM_NAME, err);
+			return false;
+		},
+		Ok(regexset) => {
+			return regexset.is_match(name);
+		}
+	}
 }
 
 pub fn resolve(name: &String, type_: &ObjectType, settings: &Settings) -> Status {
-	if !exists_in_list(name, type_, &settings.override_list.iter().map(|item| item.as_str()).collect()) {
+	if !settings.override_list.is_match(name) {
 		if exists_in_ignore_list(name, type_, settings) {
 			return Status::Ignored;
 		}

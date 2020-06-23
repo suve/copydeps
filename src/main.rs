@@ -157,7 +157,7 @@ fn process_deps(deps: &HashMap<String, Status>, callback: DepCallback, settings:
 }
 
 fn main() {
-	let settings = match Settings::new_from_argv() {
+	let mut settings = match Settings::new_from_argv() {
 		Ok(s) => s,
 		Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(1); }
 	};
@@ -166,6 +166,11 @@ fn main() {
 		Ok(obj) => obj,
 		Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(2); }
 	};
+
+	match settings.compile_lists(executable.type_.is_exe()) {
+		Some(err) => { eprintln!("{}: {}", PROGRAM_NAME, err); exit(1); }
+		None => { /* do nothing */ }
+	}
 
 	let deps = walk_deps_recursively(&executable, &settings);
 	let status = process_deps(&deps, if settings.dry_run { dep_print } else { dep_copy }, &settings);

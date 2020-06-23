@@ -27,7 +27,16 @@ pub enum ObjectType {
 	Elf32,
 	Elf64,
 	Exe32,
-	Exe64
+	Exe64,
+}
+
+impl ObjectType {
+	pub fn is_exe(&self) -> bool {
+		match self {
+			ObjectType::Exe32 | ObjectType::Exe64 => return true,
+			_ => return false,
+		}
+	}
 }
 
 pub struct Object {
