@@ -12,3 +12,4 @@ debug = true
 [dependencies]
 getopts = "^0.2.21"
 goblin = "^0.2.3"
+same-file = "^1.0.6"

@@ -16,7 +16,11 @@
  */
 use std::collections::HashMap;
 use std::fs;
+use std::path::PathBuf;
 use std::process::exit;
+
+extern crate same_file;
+use same_file::is_same_file;
 
 mod parser;
 use parser::Object;
@@ -62,6 +66,35 @@ fn dep_print(name: &String, status: &Status, _settings: &Settings) -> bool {
 	return true;
 }
 
+fn should_copy(name: &String, source: &PathBuf, destination: &PathBuf, settings: &Settings) -> Result<bool, String> {
+	if !destination.exists() {
+		return Result::Ok(true);
+	}
+
+	if settings.no_clobber {
+		if settings.verbose {
+			println!("\"{}\": already exists in the target directory and --no-clobber was specified", name);
+		}
+		return Result::Ok(false);
+	}
+
+	match is_same_file(source, &destination) {
+		Ok(true) => {
+			if settings.verbose {
+				println!("\"{}\": preferred version already present in target directory", name);
+			}
+			return Result::Ok(false);
+		},
+		Err(err) => {
+			return Result::Err(format!(
+				"Failed to determine if \"{}\" and \"{}\" refer to the same file: {}",
+				source.to_string_lossy(), destination.to_string_lossy(), err
+			));
+		}
+		Ok(false) => { return Result::Ok(true); }
+	};
+}
+
 fn dep_copy(name: &String, status: &Status, settings: &Settings) -> bool {
 	match status {
 		Status::Ignored => {
@@ -78,24 +111,28 @@ fn dep_copy(name: &String, status: &Status, settings: &Settings) -> bool {
 			let mut destination = settings.target_dir.clone();
 			destination.push(name);
 
-			if (settings.no_clobber) && (destination.exists()) {
-				if settings.verbose {
-					eprintln!("\"{}\": already exists in the target directory and --no-clobber was specified", name);
-				}
-				return true;
-			}
-
-			match fs::copy(resolved, &destination) {
-				Ok(_) => {
-					if settings.verbose {
-						println!("\"{}\": {} -> {}", name, resolved.to_string_lossy(), destination.to_string_lossy())
-					}
-					return true;
-				},
+			match should_copy(name, resolved, &destination, settings) {
 				Err(err) => {
-					eprintln!("{}: failed to copy \"{}\": {}", PROGRAM_NAME, name, err);
+					eprintln!("{}: {}", PROGRAM_NAME, err);
 					return false;
 				},
+				Ok(false) => {
+					return true;
+				},
+				Ok(true) => {
+					match fs::copy(resolved, &destination) {
+						Ok(_) => {
+							if settings.verbose {
+								println!("\"{}\": {} -> {}", name, resolved.to_string_lossy(), destination.to_string_lossy())
+							}
+							return true;
+						},
+						Err(err) => {
+							eprintln!("{}: failed to copy \"{}\": {}", PROGRAM_NAME, name, err);
+							return false;
+						},
+					}
+				}
 			}
 		}
 	}
