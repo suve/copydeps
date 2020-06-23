@@ -21,6 +21,7 @@ version = "5.0.0"
 dependencies = [
  "getopts",
  "goblin",
+ "lazy_static",
  "regex",
  "same-file",
 ]

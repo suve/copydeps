@@ -19,11 +19,11 @@ use std::path::Path;
 use std::path::PathBuf;
 
 extern crate regex;
+use regex::RegexSet;
 use regex::RegexSetBuilder;
 
 use crate::parser::ObjectType;
 use crate::settings::Settings;
-use crate::version::PROGRAM_NAME;
 
 pub enum Status {
 	Ignored,
@@ -64,19 +64,16 @@ fn find_in_directory(name: &String, type_: &ObjectType, dir: &Path) -> Option<St
 	return Option::None;
 }
 
-fn exists_in_ignore_list(name: &String, type_: &ObjectType, settings: &Settings) -> bool {
-	if settings.ignore_list.is_match(name) {
-		return true;
-	}
-
-	let ignore_list = match type_ {
-		ObjectType::Elf32 => RegexSetBuilder::new(vec![
+lazy_static! {
+	static ref IGNORELIST_ELF32: RegexSet = RegexSetBuilder::new(vec![
 			r"ld-linux\.so*"
-		]).build(),
-		ObjectType::Elf64 => RegexSetBuilder::new(vec![
+		]).build().unwrap();
+
+	static ref IGNORELIST_ELF64: RegexSet = RegexSetBuilder::new(vec![
 			r"ld-linux-x86-64\.so*"
-		]).build(),
-		ObjectType::Exe32 | ObjectType::Exe64 => RegexSetBuilder::new(vec![
+		]).build().unwrap();
+
+	static ref IGNORELIST_EXE: RegexSet = RegexSetBuilder::new(vec![
 			r"^ADVAPI32\.dll$",
 			r"^CRYPT32\.dll$",
 			r"^GDI32\.dll$",
@@ -88,18 +85,21 @@ fn exists_in_ignore_list(name: &String, type_: &ObjectType, settings: &Settings)
 			r"^USER32\.dll$",
 			r"^VERSION\.dll$",
 			r"^WINMM\.dll$", r"^WS2_32\.dll$"
-		]).case_insensitive(true).build(),
+		]).case_insensitive(true).build().unwrap();
+}
+
+fn exists_in_ignore_list(name: &String, type_: &ObjectType, settings: &Settings) -> bool {
+	if settings.ignore_list.is_match(name) {
+		return true;
+	}
+
+	let builtin_ignore_list: &RegexSet = match type_ {
+		ObjectType::Elf32 => &IGNORELIST_ELF32,
+		ObjectType::Elf64 => &IGNORELIST_ELF64,
+		ObjectType::Exe32 | ObjectType::Exe64 => &IGNORELIST_EXE,
 	};
 
-	match ignore_list {
-		Err(err) => {
-			eprintln!("{}: internal error: failed to compile ignore-list regular expressions: {}", PROGRAM_NAME, err);
-			return false;
-		},
-		Ok(regexset) => {
-			return regexset.is_match(name);
-		}
-	}
+	return builtin_ignore_list.is_match(name);
 }
 
 pub fn resolve(name: &String, type_: &ObjectType, settings: &Settings) -> Status {

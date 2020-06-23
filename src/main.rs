@@ -19,6 +19,8 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::exit;
 
+#[macro_use] extern crate lazy_static;
+
 extern crate same_file;
 use same_file::is_same_file;
 
