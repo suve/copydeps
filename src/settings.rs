@@ -205,7 +205,7 @@ impl Settings {
 			settings.dry_run = true;
 		}
 		if matches.opt_present("exedir") {
-			settings.search_dirs.push(executable_dir.clone());
+			settings.search_dirs.insert(0, executable_dir.clone());
 		}
 		if matches.opt_present("no-clobber") {
 			settings.no_clobber = true;
