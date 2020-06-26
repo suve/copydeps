@@ -25,39 +25,18 @@ extern crate same_file;
 use same_file::is_same_file;
 
 mod parser;
-use parser::Object;
 use parser::get_deps;
 
 mod resolver;
 use resolver::Status;
 use resolver::resolve;
+use resolver::resolve_recursively;
 
 mod settings;
 use settings::Settings;
 
 mod version;
 use version::*;
-
-fn walk_deps_recursively(obj: &Object, settings: &Settings) -> HashMap<String, Status> {
-	let mut result: HashMap<String, Status> = HashMap::new();
-
-	let mut unresolved: Vec<String> = obj.deps.clone();
-	while !unresolved.is_empty() {
-		let entry = unresolved.pop().unwrap();
-		if result.contains_key(entry.as_str()) { continue; }
-
-		let status = resolve(&entry, &obj.type_, settings);
-		if let Status::Resolved(path) = &status {
-			match get_deps(&path) {
-				Ok(mut sub_obj) => { unresolved.append(&mut sub_obj.deps); },
-				Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(3); }
-			}
-		}
-		result.insert(entry, status);
-	}
-
-	return result;
-}
 
 fn dep_print(name: &String, status: &Status, _settings: &Settings) -> bool {
 	match status {
@@ -174,7 +153,11 @@ fn main() {
 		None => { /* do nothing */ }
 	}
 
-	let deps = walk_deps_recursively(&executable, &settings);
+	let deps = match resolve_recursively(&executable, &settings) {
+		Ok(hm) => hm,
+		Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(3); }
+	};
+
 	let status = process_deps(&deps, if settings.dry_run { dep_print } else { dep_copy }, &settings);
 	exit(if status { 0 } else { 4 });
 }

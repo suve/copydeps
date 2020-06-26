@@ -14,6 +14,7 @@
  * You should have received a copy of the GNU General Public License along with
  * this program (LICENCE.txt). If not, see <https://www.gnu.org/licenses/>.
  */
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
@@ -22,7 +23,10 @@ extern crate regex;
 use regex::RegexSet;
 use regex::RegexSetBuilder;
 
+use crate::parser::Object;
 use crate::parser::ObjectType;
+use crate::parser::get_deps;
+
 use crate::settings::Settings;
 
 pub enum Status {
@@ -139,4 +143,25 @@ pub fn resolve(name: &String, type_: &ObjectType, settings: &Settings) -> Status
 	}
 
 	return Status::FailedToResolve;
+}
+
+pub fn resolve_recursively(obj: &Object, settings: &Settings) -> Result<HashMap<String, Status>, String> {
+	let mut result: HashMap<String, Status> = HashMap::new();
+
+	let mut unresolved: Vec<String> = obj.deps.clone();
+	while !unresolved.is_empty() {
+		let entry = unresolved.pop().unwrap();
+		if result.contains_key(entry.as_str()) { continue; }
+
+		let status = resolve(&entry, &obj.type_, settings);
+		if let Status::Resolved(path) = &status {
+			match get_deps(&path) {
+				Ok(mut sub_obj) => { unresolved.append(&mut sub_obj.deps); },
+				Err(msg) => { return Result::Err(msg); }
+			}
+		}
+		result.insert(entry, status);
+	}
+
+	return Result::Ok(result);
 }
