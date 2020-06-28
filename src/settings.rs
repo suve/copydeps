@@ -27,12 +27,12 @@ extern crate regex;
 use regex::RegexSet;
 use regex::RegexSetBuilder;
 
+use crate::exit_status::*;
 use crate::version::*;
 
 fn print_help() {
 	print!(concat!(
-			"{NAME} v.{VERSION} by {AUTHOR}\n",
-			"Find and copy all .so / .dll files needed by a program to run.\n",
+			"{NAME} finds and copies all .so / .dll files needed by a program to run.\n",
 			"This can be useful when you want to bundle an application\n",
 			"together will all its dependencies.\n",
 			"\n",
@@ -68,10 +68,12 @@ fn print_help() {
 			"  Print the names of the dependencies as they're being copied over.\n",
 			""
 		),
-		AUTHOR = PROGRAM_AUTHOR,
 		NAME = PROGRAM_NAME,
-		VERSION = PROGRAM_VERSION,
 	);
+}
+
+fn print_version() {
+	println!("{} v.{} by {}", PROGRAM_NAME, PROGRAM_VERSION, PROGRAM_AUTHOR);
 }
 
 fn verify_dir(dir: &PathBuf) -> Option<String> {
@@ -151,11 +153,11 @@ impl Settings {
 
 		if matches.opt_present("help") {
 			print_help();
-			exit(0);
+			exit(EXIT_OK);
 		}
 		if matches.opt_present("version") {
-			println!("{} v.{} by {}", PROGRAM_NAME, PROGRAM_VERSION, PROGRAM_AUTHOR);
-			exit(0);
+			print_version();
+			exit(EXIT_OK);
 		}
 
 		match matches.free.len() {
