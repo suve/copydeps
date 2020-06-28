@@ -201,7 +201,13 @@ impl Settings {
 		settings.override_list_str = matches.opt_strs( "override");
 		settings.override_list_str.append(matches.opt_strs("whitelist").as_mut());
 
-		settings.search_dirs = matches.opt_strs("search-dir").iter().map(|item| PathBuf::from(item)).collect();
+		for entry in matches.opt_strs("search-dir") {
+			let entry_pb = PathBuf::from(entry);
+			match verify_dir(&entry_pb) {
+				Some(msg) => return Result::Err(msg),
+				None => settings.search_dirs.push(entry_pb),
+			}
+		}
 
 		if matches.opt_present("dry-run") {
 			settings.dry_run = true;
