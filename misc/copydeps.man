@@ -1,4 +1,4 @@
-.TH COPYDEPS 1 "2019-08-08" "" "User Commands Manual"
+.TH COPYDEPS 1 "2020-06-28" "" "User Commands Manual"
 .
 .SH NAME
 .B copydeps

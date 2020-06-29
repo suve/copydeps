@@ -35,7 +35,7 @@ install: all
 	install -m 755 -d "$(DESTDIR)$(PREFIX)/bin/"
 	install -m 755 -p ./build/copydeps "$(DESTDIR)$(PREFIX)/bin/copydeps"
 	install -m 755 -d "$(DESTDIR)$(PREFIX)/share/man/man1/"
-	install -m 644 -p ./copydeps.man "$(DESTDIR)$(PREFIX)/share/man/man1/copydeps.1"
+	install -m 644 -p ./misc/copydeps.man "$(DESTDIR)$(PREFIX)/share/man/man1/copydeps.1"
 
 # -- PHONY targets end
 
