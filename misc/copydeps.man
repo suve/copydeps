@@ -42,13 +42,13 @@ without actually copying the \fB.so\fR / \fB.dll\fR files.
 .B \-\-exedir
 Include the directory of the executable
 in the \fB.so\fR / \fB.dll\fR resolve paths.
-Files found in the exedir are preferred over those in system paths.
+Files found in the exedir are preferred over those found anywhere else.
 .TP
 .B \-\-help
 Print a short help message and exit.
 .TP
 \fB\-\-ignore\fR \fIPATTERN\fR
-Add \fIPATTERN\fR to the ignore-list
+Add the regular expression \fIPATTERN\fR to the ignore-list
 (\fB.so\fR / \fB.dll\fR names that should not be resolved nor copied over).
 .TP
 .B \-\-no\-clobber
@@ -56,7 +56,7 @@ Do not overwrite \fB.so\fR / \fB.dll\fR files
 already existing in the target directory.
 .TP
 \fB\-\-override\fR \fIPATTERN\fR
-Add \fIPATTERN\fR to the override-list
+Add the regular expression \fIPATTERN\fR to the override-list
 (\fB.so\fR / \fB.dll\fR names that should always be resolved and copied over).
 Overrides take precedence over ignores.
 .TP
@@ -80,17 +80,17 @@ Success.
 An error in program arguments.
 .TP
 .B 2
-Failed to parse \fIEXECUTABLE\fR.
+Failed to parse \fIEXECUTABLE\fR, or it's an unsupported format.
 .TP
 .B 3
 Failed to parse one of the \fB.so\fR / \fB.dll\fR files,
 be it a direct dependency of \fIEXECUTABLE\fR, or a dependency of another library.
 .TP
 .B 4
-Failed to resolve one of the dependency names.
+Failed to resolve one or more of the dependency names.
 .TP
 .B 5
-An error occurred when copying one (or more) of the files.
+An error occurred when copying one or more of the files.
 .
 .SH SEE ALSO
 ldd(1), objdump(1)
