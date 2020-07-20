@@ -6,7 +6,7 @@ executors:
     shell: /usr/bin/bash
 
 jobs:
-  build:
+  build-only:
     executor: fedora
     steps:
       - run:
@@ -23,8 +23,41 @@ jobs:
           name: Build project
           command: >
             make -j all
- 
+
+  build-and-publish:
+    executor: fedora
+    steps:
+      - run:
+          name: Install compiler and tools
+          command: >
+            sudo dnf install --assumeyes --setopt=install_weak_deps=False
+            cargo git rust
+      - checkout
+      - run:
+          name: Fetch dependencies via Cargo
+          command: >
+            cargo fetch
+      - run:
+          name: Build Cargo package
+          command: >
+            cargo package
+      - run:
+          name: Publish to crates.io
+          command: >
+            cargo publish --token="$CARGO_TOKEN"
+
 workflows:
-  build:
+  default:
     jobs:
-      - build
+      - build-only:
+          filters:
+            tags:
+              ignore: /.*/
+            branches:
+              only: /.*/
+      - build-and-publish:
+          filters:
+            tags:
+              only: /release-v.*/
+            branches:
+              ignore: /.*/

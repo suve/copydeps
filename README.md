@@ -41,6 +41,17 @@ When omitted, defaults to the directory of the target executable.
 - `--verbose`  
   Print the names of the dependencies as they're being copied over.
 
+## Building from source
+
+**copydeps** is written in Rust and uses Cargo for keeping track of its dependencies.
+While you may invoke `cargo` directly, it's recommended to use `make` instead.
+
+```
+cd copydeps/
+make -j all
+[sudo] make install
+```
+
 ## Licence
 **copydeps** is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License, either version 3 of the License, or (at your option) any later version.
 

@@ -27,7 +27,7 @@ function _copydeps() {
 		if [[ "${i_word:0:2}" != "--" ]]; then
 			((arg_count+=1))
 		elif [[ "${i_word}" == "--" ]]; then
-			if [[ i -lt "${COMP_CWORD}" ]]; then
+			if [[ "$i" -lt "${COMP_CWORD}" ]]; then
 				no_more_opts=1
 			fi
 
