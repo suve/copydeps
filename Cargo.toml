@@ -1,0 +1,17 @@
+[package]
+name = "copydeps"
+version = "5.0.0"
+authors = ["suve <veg@svgames.pl>"]
+edition = "2018"
+license = "GPLv3+"
+repository = "https://github.com/suve/copydeps/"
+
+[profile.release]
+debug = true
+
+[dependencies]
+getopts = "^0.2.21"
+goblin = "^0.2.3"
+lazy_static = "^1.4.0"
+regex = "^1.3.9"
+same-file = "^1.0.6"

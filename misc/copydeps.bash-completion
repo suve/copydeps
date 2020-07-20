@@ -1,0 +1,72 @@
+# bash_completion file for copydeps
+# Copyright (C) 2020 Artur "suve" Iwicki
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License, version 3,
+# as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program (LICENCE.txt). If not, see <http://www.gnu.org/licenses/>.
+
+function _copydeps() {
+	COMPREPLY=()
+
+	local no_more_opts=0
+	local arg_count=0
+
+	local comp_len="${#COMP_WORDS[@]}"
+	((comp_len-=1))
+
+	for ((i=1; i<comp_len; i++)); do
+		local i_word="${COMP_WORDS[i]}"
+		if [[ "${i_word:0:2}" != "--" ]]; then
+			((arg_count+=1))
+		elif [[ "${i_word}" == "--" ]]; then
+			if [[ i -lt "${COMP_CWORD}" ]]; then
+				no_more_opts=1
+			fi
+
+			((arg_count+=comp_len-i-1))
+			break
+		fi
+	done
+
+	local curr="${COMP_WORDS[COMP_CWORD]}"
+	local prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+	local opts="--dry-run --exedir --help --ignore --no-clobber --override --search-dir --verbose --version"
+	if [[ "${no_more_opts}" -eq 1 ]]; then
+		opts=""
+	fi
+
+	if [[ "${prev}" == "--help" ]] || [[ "${prev}" == "--version" ]]; then
+		# These cause the program to print the appropriate text and exit immediately
+		COMPREPLY=()
+	elif [[ "${prev}" == "--ignore" ]] || [[ "${prev}" == "--override" ]]; then
+		# Do not suggest anything for the ignore/override patterns
+		COMPREPLY=()
+	elif [[ "${prev}" == "--search-dir" ]]; then
+		# No surprises here, just match directories
+		COMPREPLY=( $(compgen -d -- "${curr}") )
+	else
+		if [[ "${arg_count}" -eq 0 ]]; then
+			# No EXECUTABLE specified yet - match options and files
+			COMPREPLY=( $(compgen -W "${opts}" -f -- "${curr}") )
+		elif [[ "${arg_count}" -eq 1 ]]; then
+			# Executable specified, DESTDIR not specified - match options and directories
+			COMPREPLY=( $(compgen -W "${opts}" -d -- "${curr}") )
+		else
+			# Both EXECUTABLE and DESTDIR specified, only match options
+			COMPREPLY=( $(compgen -W "${opts}" -- "${curr}") )
+		fi
+	fi
+
+	return 0
+}
+
+complete -o filenames -F _copydeps copydeps

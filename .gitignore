@@ -1,6 +1,7 @@
 # General
 build/
 dist/
+target/
 
 # Python-specific stuff
 *.egg-info/
