@@ -17,8 +17,7 @@ function _copydeps() {
 	COMPREPLY=()
 
 	local no_more_opts=0
-	local has_executable=0
-	local has_destdir=0
+	local arg_count=0
 
 	local comp_len="${#COMP_WORDS[@]}"
 	((comp_len-=1))
@@ -26,13 +25,14 @@ function _copydeps() {
 	for ((i=1; i<comp_len; i++)); do
 		local i_word="${COMP_WORDS[i]}"
 		if [[ "${i_word:0:2}" != "--" ]]; then
-			if [[ "${has_executable}" -eq 0 ]]; then
-				has_executable=1
-			else
-				has_destdir=1
-			fi
+			((arg_count+=1))
 		elif [[ "${i_word}" == "--" ]]; then
-			no_more_opts=1
+			if [[ i -lt "${COMP_CWORD}" ]]; then
+				no_more_opts=1
+			fi
+
+			((arg_count+=comp_len-i-1))
+			break
 		fi
 	done
 
@@ -54,10 +54,10 @@ function _copydeps() {
 		# No surprises here, just match directories
 		COMPREPLY=( $(compgen -d -- "${curr}") )
 	else
-		if [[ "${has_executable}" -eq 0 ]]; then
+		if [[ "${arg_count}" -eq 0 ]]; then
 			# No EXECUTABLE specified yet - match options and files
 			COMPREPLY=( $(compgen -W "${opts}" -f -- "${curr}") )
-		elif [[ "${has_destdir}" -eq 0 ]]; then
+		elif [[ "${arg_count}" -eq 1 ]]; then
 			# Executable specified, DESTDIR not specified - match options and directories
 			COMPREPLY=( $(compgen -W "${opts}" -d -- "${curr}") )
 		else
