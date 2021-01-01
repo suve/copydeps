@@ -1,6 +1,6 @@
 /**
  * This file is part of the copydeps program.
- * Copyright (C) 2020 Artur "suve" Iwicki
+ * Copyright (C) 2020-2021 Artur "suve" Iwicki
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License,
@@ -84,11 +84,12 @@ lazy_static! {
 			r"^IMM32\.dll$",
 			r"^KERNEL32\.dll$",
 			r"^msvcrt\.dll$",
+			r"^ncrypt\.dll$",
 			r"^ole32\.dll$", r"^OLEAUT32\.dll$",
-			r"^SETUPAPI\.dll$", r"^SHELL32\.dll$",
-			r"^USER32\.dll$",
+			r"^Secur32\.dll$", r"^SETUPAPI\.dll$", r"^SHELL32\.dll$",
+			r"^USER32\.dll$", r"^UserEnv\.dll$",
 			r"^VERSION\.dll$",
-			r"^WINMM\.dll$", r"^WS2_32\.dll$"
+			r"^WINMM\.dll$", r"^WLDAP32\.dll$", r"^WS2_32\.dll$",
 		]).case_insensitive(true).build().unwrap();
 }
 
