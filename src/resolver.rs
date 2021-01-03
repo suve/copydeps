@@ -79,14 +79,14 @@ lazy_static! {
 
 	static ref IGNORELIST_EXE: RegexSet = RegexSetBuilder::new(vec![
 			r"^ADVAPI32\.dll$",
-			r"^CRYPT32\.dll$",
+			r"^COMCTL32\.dll$", r"^COMDLG32\.dll$", r"^CRYPT32\.dll$",
 			r"^GDI32\.dll$",
 			r"^IMM32\.dll$",
 			r"^KERNEL32\.dll$",
 			r"^msvcrt\.dll$",
-			r"^ncrypt\.dll$",
+			r"^ncrypt\.dll$", r"^NETAPI32\.dll$", r"^NTDLL\.dll$",
 			r"^ole32\.dll$", r"^OLEAUT32\.dll$",
-			r"^Secur32\.dll$", r"^SETUPAPI\.dll$", r"^SHELL32\.dll$",
+			r"^Secur32\.dll$", r"^SETUPAPI\.dll$", r"^SHSCRAP\.dll$", r"^SHELL32\.dll$",
 			r"^USER32\.dll$", r"^UserEnv\.dll$",
 			r"^VERSION\.dll$",
 			r"^WINMM\.dll$", r"^WLDAP32\.dll$", r"^WS2_32\.dll$",
