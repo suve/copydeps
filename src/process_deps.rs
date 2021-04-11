@@ -1,6 +1,6 @@
 /**
  * This file is part of the copydeps program.
- * Copyright (C) 2020 Artur "suve" Iwicki
+ * Copyright (C) 2020-2021 Artur "suve" Iwicki
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License,
@@ -36,14 +36,14 @@ enum ProcessingStatus {
 
 fn should_copy(name: &String, source: &PathBuf, destination: &PathBuf, settings: &Settings) -> Result<bool, String> {
 	if !destination.exists() {
-		return Result::Ok(true);
+		return Ok(true);
 	}
 
 	if settings.no_clobber {
 		if settings.verbose {
 			println!("\"{}\": already exists in the target directory and --no-clobber was specified", name);
 		}
-		return Result::Ok(false);
+		return Ok(false);
 	}
 
 	match is_same_file(source, &destination) {
@@ -51,15 +51,15 @@ fn should_copy(name: &String, source: &PathBuf, destination: &PathBuf, settings:
 			if settings.verbose {
 				println!("\"{}\": preferred version already present in target directory", name);
 			}
-			return Result::Ok(false);
+			return Ok(false);
 		},
 		Err(err) => {
-			return Result::Err(format!(
+			return Err(format!(
 				"Failed to determine if \"{}\" and \"{}\" refer to the same file: {}",
 				source.to_string_lossy(), destination.to_string_lossy(), err
 			));
 		}
-		Ok(false) => { return Result::Ok(true); }
+		Ok(false) => { return Ok(true); }
 	};
 }
 

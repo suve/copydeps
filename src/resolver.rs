@@ -43,7 +43,7 @@ fn find_in_directory(name: &String, type_: &ObjectType, dir: &Path) -> Option<St
 			filepath.push(name);
 
 			if filepath.exists() {
-				return Option::Some(name.parse().unwrap())
+				return Some(name.parse().unwrap())
 			}
 		},
 		// With PE, iterate over the directory entries and look for a case-insensitive match.
@@ -54,7 +54,7 @@ fn find_in_directory(name: &String, type_: &ObjectType, dir: &Path) -> Option<St
 						match entry.file_name().to_str() {
 							Some(entry_name) => {
 								if name.eq_ignore_ascii_case(entry_name) {
-									return Option::Some(String::from(entry_name))
+									return Some(String::from(entry_name))
 								}
 							},
 							None => { /* ignore */ }
@@ -65,7 +65,7 @@ fn find_in_directory(name: &String, type_: &ObjectType, dir: &Path) -> Option<St
 		}
 	}
 
-	return Option::None;
+	return None;
 }
 
 lazy_static! {
@@ -158,11 +158,11 @@ pub fn resolve_recursively(obj: &Object, settings: &Settings) -> Result<HashMap<
 		if let Status::Resolved(path) = &status {
 			match get_deps(&path) {
 				Ok(mut sub_obj) => { unresolved.append(&mut sub_obj.deps); },
-				Err(msg) => { return Result::Err(msg); }
+				Err(msg) => { return Err(msg); }
 			}
 		}
 		result.insert(entry, status);
 	}
 
-	return Result::Ok(result);
+	return Ok(result);
 }

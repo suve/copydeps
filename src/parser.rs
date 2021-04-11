@@ -1,6 +1,6 @@
 /**
  * This file is part of the copydeps program.
- * Copyright (C) 2020 Artur "suve" Iwicki
+ * Copyright (C) 2020-2021 Artur "suve" Iwicki
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License,
@@ -61,19 +61,19 @@ fn get_deps_pe(exe: PE) -> Object {
 pub fn get_deps(filename: &Path) -> Result<Object, String> {
 	let bytes = match fs::read(filename) {
 		Ok(bytes) => bytes,
-		Err(msg) => { return Result::Err(format!("Failed to open file \"{}\": {}", filename.to_string_lossy(), msg)); }
+		Err(msg) => { return Err(format!("Failed to open file \"{}\": {}", filename.to_string_lossy(), msg)); }
 	};
 
 	let object = match Goblin::parse(&bytes) {
 		Ok(obj) => obj,
-		Err(msg) => { return Result::Err(format!("Failed to parse file \"{}\": {}", filename.to_string_lossy(), msg)); }
+		Err(msg) => { return Err(format!("Failed to parse file \"{}\": {}", filename.to_string_lossy(), msg)); }
 	};
 
 	match object {
-		Goblin::Elf(elf) => return Result::Ok(get_deps_elf(elf)),
-		Goblin::PE(pe) => return Result::Ok(get_deps_pe(pe)),
-		Goblin::Mach(_) => return Result::Err(format!("File \"{}\" is an unsupported object type \"Mach\"", filename.to_string_lossy())),
-		Goblin::Archive(_) => return Result::Err(format!("File \"{}\" is an unsupported object type \"Archive\"", filename.to_string_lossy())),
-		Goblin::Unknown(magic) => return Result::Err(format!("File \"{}\" is an unsupported object type (magic: {})", filename.to_string_lossy(), magic)),
+		Goblin::Elf(elf) => return Ok(get_deps_elf(elf)),
+		Goblin::PE(pe) => return Ok(get_deps_pe(pe)),
+		Goblin::Mach(_) => return Err(format!("File \"{}\" is an unsupported object type \"Mach\"", filename.to_string_lossy())),
+		Goblin::Archive(_) => return Err(format!("File \"{}\" is an unsupported object type \"Archive\"", filename.to_string_lossy())),
+		Goblin::Unknown(magic) => return Err(format!("File \"{}\" is an unsupported object type (magic: {})", filename.to_string_lossy(), magic)),
 	}
 }
