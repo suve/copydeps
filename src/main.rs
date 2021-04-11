@@ -1,6 +1,6 @@
 /**
  * This file is part of the copydeps program.
- * Copyright (C) 2020 Artur "suve" Iwicki
+ * Copyright (C) 2020-2021 Artur "suve" Iwicki
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License,
@@ -50,8 +50,8 @@ fn main() {
 	};
 
 	match settings.compile_lists(executable.type_.is_exe()) {
-		Some(err) => { eprintln!("{}: {}", PROGRAM_NAME, err); exit(EXIT_ARGS_ERROR); }
-		None => { /* do nothing */ }
+		Ok(_) => { /* do nothing */ }
+		Err(err) => { eprintln!("{}: {}", PROGRAM_NAME, err); exit(EXIT_ARGS_ERROR); }
 	}
 
 	let deps = match resolve_recursively(&executable, &settings) {

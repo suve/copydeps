@@ -1,6 +1,6 @@
 /**
  * This file is part of the copydeps program.
- * Copyright (C) 2020 Artur "suve" Iwicki
+ * Copyright (C) 2020-2021 Artur "suve" Iwicki
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License,
@@ -77,14 +77,14 @@ fn print_version() {
 	println!("{} v.{} by {}", PROGRAM_NAME, PROGRAM_VERSION, PROGRAM_AUTHOR);
 }
 
-fn verify_dir(dir: &PathBuf) -> Option<String> {
+fn verify_dir(dir: &PathBuf) -> Result<(),String> {
 	if !dir.exists() {
-		return Option::Some(format!("Directory \"{}\" does not exist", dir.to_str().unwrap()));
+		return Result::Err(format!("Directory \"{}\" does not exist", dir.to_str().unwrap()));
 	}
 	if !dir.is_dir() {
-		return Option::Some(format!("\"{}\" is not a directory", dir.to_str().unwrap()));
+		return Result::Err(format!("\"{}\" is not a directory", dir.to_str().unwrap()));
 	}
-	return Option::None
+	return Result::Ok(())
 }
 
 
@@ -185,8 +185,8 @@ impl Settings {
 		if matches.free.len() == 3 {
 			let target_dir = PathBuf::from(matches.free.get(2).unwrap());
 			match verify_dir(&target_dir) {
-				Some(msg) => return Result::Err(msg),
-				None => {},
+				Ok(_) => {},
+				Err(msg) => return Result::Err(msg),
 			}
 			settings.target_dir = match target_dir.canonicalize() {
 				Ok(pb) => pb,
@@ -205,8 +205,8 @@ impl Settings {
 		for entry in matches.opt_strs("search-dir") {
 			let entry_pb = PathBuf::from(entry);
 			match verify_dir(&entry_pb) {
-				Some(msg) => return Result::Err(msg),
-				None => settings.search_dirs.push(entry_pb),
+				Ok(_) => settings.search_dirs.push(entry_pb),
+				Err(msg) => return Result::Err(msg),
 			}
 		}
 
@@ -226,20 +226,20 @@ impl Settings {
 		return Result::Ok(settings);
 	}
 
-	pub fn compile_lists(&mut self, case_insensitive: bool) -> Option<String> {
+	pub fn compile_lists(&mut self, case_insensitive: bool) -> Result<(), String> {
 		self.ignore_list = match RegexSetBuilder::new(&self.ignore_list_str).case_insensitive(case_insensitive).build() {
 			Result::Ok(rs) => rs,
 			Result::Err(err) => {
-				return Option::Some(format!("Error while processing ignore-list patterns: {}", err));
+				return Result::Err(format!("Error while processing ignore-list patterns: {}", err));
 			}
 		};
 		self.override_list = match RegexSetBuilder::new(&self.override_list_str).case_insensitive(case_insensitive).build() {
 			Result::Ok(rs) => rs,
 			Result::Err(err) => {
-				return Option::Some(format!("Error while processing override-list patterns: {}", err));
+				return Result::Err(format!("Error while processing override-list patterns: {}", err));
 			}
 		};
 
-		return Option::None;
+		return Result::Ok(());
 	}
 }
