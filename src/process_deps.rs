@@ -25,7 +25,6 @@ use crate::resolver::Status;
 use crate::settings::Settings;
 use crate::version::*;
 
-
 enum ProcessingStatus {
 	Ignored,
 	ResolveError,
@@ -34,14 +33,22 @@ enum ProcessingStatus {
 	Success,
 }
 
-fn should_copy(name: &String, source: &PathBuf, destination: &PathBuf, settings: &Settings) -> Result<bool, String> {
+fn should_copy(
+	name: &String,
+	source: &PathBuf,
+	destination: &PathBuf,
+	settings: &Settings,
+) -> Result<bool, String> {
 	if !destination.exists() {
 		return Ok(true);
 	}
 
 	if settings.no_clobber {
 		if settings.verbose {
-			println!("\"{}\": already exists in the target directory and --no-clobber was specified", name);
+			println!(
+				"\"{}\": already exists in the target directory and --no-clobber was specified",
+				name
+			);
 		}
 		return Ok(false);
 	}
@@ -49,17 +56,24 @@ fn should_copy(name: &String, source: &PathBuf, destination: &PathBuf, settings:
 	match is_same_file(source, &destination) {
 		Ok(true) => {
 			if settings.verbose {
-				println!("\"{}\": preferred version already present in target directory", name);
+				println!(
+					"\"{}\": preferred version already present in target directory",
+					name
+				);
 			}
 			return Ok(false);
-		},
+		}
 		Err(err) => {
 			return Err(format!(
 				"Failed to determine if \"{}\" and \"{}\" refer to the same file: {}",
-				source.to_string_lossy(), destination.to_string_lossy(), err
+				source.to_string_lossy(),
+				destination.to_string_lossy(),
+				err
 			));
 		}
-		Ok(false) => { return Ok(true); }
+		Ok(false) => {
+			return Ok(true);
+		}
 	};
 }
 
@@ -70,11 +84,11 @@ fn dep_copy(name: &String, status: &Status, settings: &Settings) -> ProcessingSt
 				println!("\"{}\": ignored, skipping", name)
 			}
 			return ProcessingStatus::Ignored;
-		},
+		}
 		Status::FailedToResolve => {
 			eprintln!("{}: failed to resolve \"{}\"", PROGRAM_NAME, name);
 			return ProcessingStatus::ResolveError;
-		},
+		}
 		Status::Resolved(resolved) => {
 			let mut destination = settings.target_dir.clone();
 			destination.push(name);
@@ -83,24 +97,27 @@ fn dep_copy(name: &String, status: &Status, settings: &Settings) -> ProcessingSt
 				Err(err) => {
 					eprintln!("{}: {}", PROGRAM_NAME, err);
 					return ProcessingStatus::Failed;
-				},
+				}
 				Ok(false) => {
 					return ProcessingStatus::Skipped;
-				},
-				Ok(true) => {
-					match fs::copy(resolved, &destination) {
-						Ok(_) => {
-							if settings.verbose {
-								println!("\"{}\": {} -> {}", name, resolved.to_string_lossy(), destination.to_string_lossy())
-							}
-							return ProcessingStatus::Success;
-						},
-						Err(err) => {
-							eprintln!("{}: failed to copy \"{}\": {}", PROGRAM_NAME, name, err);
-							return ProcessingStatus::Failed;
-						},
-					}
 				}
+				Ok(true) => match fs::copy(resolved, &destination) {
+					Ok(_) => {
+						if settings.verbose {
+							println!(
+								"\"{}\": {} -> {}",
+								name,
+								resolved.to_string_lossy(),
+								destination.to_string_lossy()
+							)
+						}
+						return ProcessingStatus::Success;
+					}
+					Err(err) => {
+						eprintln!("{}: failed to copy \"{}\": {}", PROGRAM_NAME, name, err);
+						return ProcessingStatus::Failed;
+					}
+				},
 			}
 		}
 	}
@@ -111,25 +128,29 @@ fn dep_print(name: &String, status: &Status, _settings: &Settings) -> Processing
 		Status::Ignored => {
 			println!("\"{}\": (ignored)", name);
 			return ProcessingStatus::Ignored;
-		},
+		}
 		Status::FailedToResolve => {
 			println!("\"{}\": (failed to resolve)", name);
 			return ProcessingStatus::ResolveError;
-		},
+		}
 		Status::Resolved(r) => {
 			println!("\"{}\": {}", name, r.to_string_lossy());
 			return ProcessingStatus::Success;
-		},
+		}
 	}
 }
 
 type DepCallback = fn(name: &String, status: &Status, settings: &Settings) -> ProcessingStatus;
 
-fn process_deps(deps: &HashMap<String, Status>, callback: DepCallback, settings: &Settings) -> ProcessingResult {
+fn process_deps(
+	deps: &HashMap<String, Status>,
+	callback: DepCallback,
+	settings: &Settings,
+) -> ProcessingResult {
 	let mut result = ProcessingResult {
 		failed_to_resolve: 0,
 		failed_to_copy: 0,
-		successful: 0
+		successful: 0,
 	};
 
 	let mut sorted_keys = deps.keys().collect::<Vec<&String>>();

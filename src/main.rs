@@ -16,7 +16,8 @@
  */
 use std::process::exit;
 
-#[macro_use] extern crate lazy_static;
+#[macro_use]
+extern crate lazy_static;
 
 mod exit_status;
 use exit_status::*;
@@ -37,26 +38,37 @@ use settings::Settings;
 mod version;
 use version::*;
 
-
 fn main() {
 	let mut settings = match Settings::new_from_argv() {
 		Ok(s) => s,
-		Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(EXIT_ARGS_ERROR); }
+		Err(msg) => {
+			eprintln!("{}: {}", PROGRAM_NAME, msg);
+			exit(EXIT_ARGS_ERROR);
+		}
 	};
 
 	let executable = match get_deps(&settings.executable) {
 		Ok(obj) => obj,
-		Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(EXIT_OPEN_EXE_FAILED); }
+		Err(msg) => {
+			eprintln!("{}: {}", PROGRAM_NAME, msg);
+			exit(EXIT_OPEN_EXE_FAILED);
+		}
 	};
 
 	match settings.compile_lists(executable.type_.is_exe()) {
 		Ok(_) => { /* do nothing */ }
-		Err(err) => { eprintln!("{}: {}", PROGRAM_NAME, err); exit(EXIT_ARGS_ERROR); }
+		Err(err) => {
+			eprintln!("{}: {}", PROGRAM_NAME, err);
+			exit(EXIT_ARGS_ERROR);
+		}
 	}
 
 	let deps = match resolve_recursively(&executable, &settings) {
 		Ok(hm) => hm,
-		Err(msg) => { eprintln!("{}: {}", PROGRAM_NAME, msg); exit(EXIT_OPEN_LIB_FAILED); }
+		Err(msg) => {
+			eprintln!("{}: {}", PROGRAM_NAME, msg);
+			exit(EXIT_OPEN_LIB_FAILED);
+		}
 	};
 
 	let count = match settings.dry_run {
@@ -64,7 +76,11 @@ fn main() {
 		false => copy_deps(&deps, &settings),
 	};
 
-	if count.failed_to_resolve > 0 { exit(EXIT_RESOLVE_FAILED); }
-	if count.failed_to_copy > 0 { exit(EXIT_COPY_FAILED); }
+	if count.failed_to_resolve > 0 {
+		exit(EXIT_RESOLVE_FAILED);
+	}
+	if count.failed_to_copy > 0 {
+		exit(EXIT_COPY_FAILED);
+	}
 	exit(0);
 }

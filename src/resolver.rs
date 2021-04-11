@@ -23,16 +23,16 @@ extern crate regex;
 use regex::RegexSet;
 use regex::RegexSetBuilder;
 
+use crate::parser::get_deps;
 use crate::parser::Object;
 use crate::parser::ObjectType;
-use crate::parser::get_deps;
 
 use crate::settings::Settings;
 
 pub enum Status {
 	Ignored,
 	FailedToResolve,
-	Resolved(PathBuf)
+	Resolved(PathBuf),
 }
 
 fn find_in_directory(name: &String, type_: &ObjectType, dir: &Path) -> Option<String> {
@@ -43,9 +43,9 @@ fn find_in_directory(name: &String, type_: &ObjectType, dir: &Path) -> Option<St
 			filepath.push(name);
 
 			if filepath.exists() {
-				return Some(name.parse().unwrap())
+				return Some(name.parse().unwrap());
 			}
-		},
+		}
 		// With PE, iterate over the directory entries and look for a case-insensitive match.
 		ObjectType::Exe32 | ObjectType::Exe64 => {
 			if let Ok(entries) = fs::read_dir(dir) {
@@ -54,9 +54,9 @@ fn find_in_directory(name: &String, type_: &ObjectType, dir: &Path) -> Option<St
 						match entry.file_name().to_str() {
 							Some(entry_name) => {
 								if name.eq_ignore_ascii_case(entry_name) {
-									return Some(String::from(entry_name))
+									return Some(String::from(entry_name));
 								}
-							},
+							}
 							None => { /* ignore */ }
 						}
 					}
@@ -69,28 +69,40 @@ fn find_in_directory(name: &String, type_: &ObjectType, dir: &Path) -> Option<St
 }
 
 lazy_static! {
-	static ref IGNORELIST_ELF32: RegexSet = RegexSetBuilder::new(vec![
-			r"ld-linux\.so*"
-		]).build().unwrap();
-
-	static ref IGNORELIST_ELF64: RegexSet = RegexSetBuilder::new(vec![
-			r"ld-linux-x86-64\.so*"
-		]).build().unwrap();
-
+	static ref IGNORELIST_ELF32: RegexSet = RegexSetBuilder::new(vec![r"ld-linux\.so*"])
+		.build()
+		.unwrap();
+	static ref IGNORELIST_ELF64: RegexSet = RegexSetBuilder::new(vec![r"ld-linux-x86-64\.so*"])
+		.build()
+		.unwrap();
 	static ref IGNORELIST_EXE: RegexSet = RegexSetBuilder::new(vec![
-			r"^ADVAPI32\.dll$",
-			r"^COMCTL32\.dll$", r"^COMDLG32\.dll$", r"^CRYPT32\.dll$",
-			r"^GDI32\.dll$",
-			r"^IMM32\.dll$",
-			r"^KERNEL32\.dll$",
-			r"^msvcrt\.dll$",
-			r"^ncrypt\.dll$", r"^NETAPI32\.dll$", r"^NTDLL\.dll$",
-			r"^ole32\.dll$", r"^OLEAUT32\.dll$",
-			r"^Secur32\.dll$", r"^SETUPAPI\.dll$", r"^SHSCRAP\.dll$", r"^SHELL32\.dll$",
-			r"^USER32\.dll$", r"^UserEnv\.dll$",
-			r"^VERSION\.dll$",
-			r"^WINMM\.dll$", r"^WLDAP32\.dll$", r"^WS2_32\.dll$",
-		]).case_insensitive(true).build().unwrap();
+		r"^ADVAPI32\.dll$",
+		r"^COMCTL32\.dll$",
+		r"^COMDLG32\.dll$",
+		r"^CRYPT32\.dll$",
+		r"^GDI32\.dll$",
+		r"^IMM32\.dll$",
+		r"^KERNEL32\.dll$",
+		r"^msvcrt\.dll$",
+		r"^ncrypt\.dll$",
+		r"^NETAPI32\.dll$",
+		r"^NTDLL\.dll$",
+		r"^ole32\.dll$",
+		r"^OLEAUT32\.dll$",
+		r"^Secur32\.dll$",
+		r"^SETUPAPI\.dll$",
+		r"^SHSCRAP\.dll$",
+		r"^SHELL32\.dll$",
+		r"^USER32\.dll$",
+		r"^UserEnv\.dll$",
+		r"^VERSION\.dll$",
+		r"^WINMM\.dll$",
+		r"^WLDAP32\.dll$",
+		r"^WS2_32\.dll$",
+	])
+	.case_insensitive(true)
+	.build()
+	.unwrap();
 }
 
 fn exists_in_ignore_list(name: &String, type_: &ObjectType, settings: &Settings) -> bool {
@@ -120,7 +132,7 @@ pub fn resolve(name: &String, type_: &ObjectType, settings: &Settings) -> Status
 				let mut path = dir.clone();
 				path.push(resolved);
 				return Status::Resolved(path);
-			},
+			}
 			None => { /* do nothing */ }
 		}
 	}
@@ -138,7 +150,7 @@ pub fn resolve(name: &String, type_: &ObjectType, settings: &Settings) -> Status
 				let mut path = PathBuf::from(dir);
 				path.push(resolved);
 				return Status::Resolved(path);
-			},
+			}
 			None => { /* do nothing */ }
 		}
 	}
@@ -146,19 +158,28 @@ pub fn resolve(name: &String, type_: &ObjectType, settings: &Settings) -> Status
 	return Status::FailedToResolve;
 }
 
-pub fn resolve_recursively(obj: &Object, settings: &Settings) -> Result<HashMap<String, Status>, String> {
+pub fn resolve_recursively(
+	obj: &Object,
+	settings: &Settings,
+) -> Result<HashMap<String, Status>, String> {
 	let mut result: HashMap<String, Status> = HashMap::new();
 
 	let mut unresolved: Vec<String> = obj.deps.clone();
 	while !unresolved.is_empty() {
 		let entry = unresolved.pop().unwrap();
-		if result.contains_key(entry.as_str()) { continue; }
+		if result.contains_key(entry.as_str()) {
+			continue;
+		}
 
 		let status = resolve(&entry, &obj.type_, settings);
 		if let Status::Resolved(path) = &status {
 			match get_deps(&path) {
-				Ok(mut sub_obj) => { unresolved.append(&mut sub_obj.deps); },
-				Err(msg) => { return Err(msg); }
+				Ok(mut sub_obj) => {
+					unresolved.append(&mut sub_obj.deps);
+				}
+				Err(msg) => {
+					return Err(msg);
+				}
 			}
 		}
 		result.insert(entry, status);

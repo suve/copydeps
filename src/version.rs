@@ -16,4 +16,8 @@
  */
 pub const PROGRAM_AUTHOR: &str = "suve";
 pub const PROGRAM_NAME: &str = "copydeps";
-pub const PROGRAM_VERSION: &str = concat!(env!("CARGO_PKG_VERSION_MAJOR"), ".", env!("CARGO_PKG_VERSION_MINOR"));
+pub const PROGRAM_VERSION: &str = concat!(
+	env!("CARGO_PKG_VERSION_MAJOR"),
+	".",
+	env!("CARGO_PKG_VERSION_MINOR")
+);

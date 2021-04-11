@@ -31,7 +31,8 @@ use crate::exit_status::*;
 use crate::version::*;
 
 fn print_help() {
-	print!(concat!(
+	print!(
+		concat!(
 			"{NAME} finds and copies all .so / .dll files needed by a program to run.\n",
 			"This can be useful when you want to bundle an application\n",
 			"together will all its dependencies.\n",
@@ -74,19 +75,24 @@ fn print_help() {
 }
 
 fn print_version() {
-	println!("{} v.{} by {}", PROGRAM_NAME, PROGRAM_VERSION, PROGRAM_AUTHOR);
+	println!(
+		"{} v.{} by {}",
+		PROGRAM_NAME, PROGRAM_VERSION, PROGRAM_AUTHOR
+	);
 }
 
-fn verify_dir(dir: &PathBuf) -> Result<(),String> {
+fn verify_dir(dir: &PathBuf) -> Result<(), String> {
 	if !dir.exists() {
-		return Err(format!("Directory \"{}\" does not exist", dir.to_str().unwrap()));
+		return Err(format!(
+			"Directory \"{}\" does not exist",
+			dir.to_str().unwrap()
+		));
 	}
 	if !dir.is_dir() {
 		return Err(format!("\"{}\" is not a directory", dir.to_str().unwrap()));
 	}
-	return Ok(())
+	return Ok(());
 }
-
 
 pub struct Settings {
 	pub dry_run: bool,
@@ -146,10 +152,9 @@ impl Settings {
 		opts.optflag("", "no-clobber", "");
 		opts.optflag("", "verbose", "");
 
-
 		let matches = match opts.parse(args) {
-			Ok(m) => { m },
-			Err(f) => { return Err(f.to_string()) }
+			Ok(m) => m,
+			Err(f) => return Err(f.to_string()),
 		};
 
 		if matches.opt_present("help") {
@@ -164,43 +169,65 @@ impl Settings {
 		match matches.free.len() {
 			0 => return Err(String::from("Failed to parse arguments")),
 			1 => return Err(String::from("Missing required argument: EXECUTABLE")),
-			2 | 3 => {},
-			_ => return Err(String::from("Unexpected extra arguments"))
+			2 | 3 => {}
+			_ => return Err(String::from("Unexpected extra arguments")),
 		}
 
 		let executable = PathBuf::from(matches.free.get(1).unwrap());
 		if !executable.exists() {
-			return Err(format!("File \"{}\" does not exist", executable.to_str().unwrap()));
+			return Err(format!(
+				"File \"{}\" does not exist",
+				executable.to_str().unwrap()
+			));
 		}
 		if !executable.is_file() {
-			return Err(format!("File \"{}\" is not a regular file", executable.to_str().unwrap()));
+			return Err(format!(
+				"File \"{}\" is not a regular file",
+				executable.to_str().unwrap()
+			));
 		}
 
 		settings.executable = match executable.canonicalize() {
 			Ok(pb) => pb,
-			Err(msg) => return Err(format!("Failed to canonicalize path \"{}\": {}", executable.to_string_lossy(), msg))
+			Err(msg) => {
+				return Err(format!(
+					"Failed to canonicalize path \"{}\": {}",
+					executable.to_string_lossy(),
+					msg
+				))
+			}
 		};
 		let executable_dir = settings.executable.parent().unwrap().to_path_buf();
 
 		if matches.free.len() == 3 {
 			let target_dir = PathBuf::from(matches.free.get(2).unwrap());
 			match verify_dir(&target_dir) {
-				Ok(_) => {},
+				Ok(_) => {}
 				Err(msg) => return Err(msg),
 			}
 			settings.target_dir = match target_dir.canonicalize() {
 				Ok(pb) => pb,
-				Err(msg) => return Err(format!("Failed to canonicalize path \"{}\": {}", target_dir.to_string_lossy(), msg))
+				Err(msg) => {
+					return Err(format!(
+						"Failed to canonicalize path \"{}\": {}",
+						target_dir.to_string_lossy(),
+						msg
+					))
+				}
 			};
 		} else {
 			settings.target_dir = executable_dir.clone();
 		}
 
 		settings.ignore_list_str = matches.opt_strs("ignore");
-		settings.ignore_list_str.append(matches.opt_strs("blacklist").as_mut());
+		settings
+			.ignore_list_str
+			.append(matches.opt_strs("blacklist").as_mut());
 
-		settings.override_list_str = matches.opt_strs( "override");
-		settings.override_list_str.append(matches.opt_strs("whitelist").as_mut());
+		settings.override_list_str = matches.opt_strs("override");
+		settings
+			.override_list_str
+			.append(matches.opt_strs("whitelist").as_mut());
 
 		for entry in matches.opt_strs("search-dir") {
 			let entry_pb = PathBuf::from(entry);
@@ -227,16 +254,28 @@ impl Settings {
 	}
 
 	pub fn compile_lists(&mut self, case_insensitive: bool) -> Result<(), String> {
-		self.ignore_list = match RegexSetBuilder::new(&self.ignore_list_str).case_insensitive(case_insensitive).build() {
+		self.ignore_list = match RegexSetBuilder::new(&self.ignore_list_str)
+			.case_insensitive(case_insensitive)
+			.build()
+		{
 			Ok(rs) => rs,
 			Err(err) => {
-				return Err(format!("Error while processing ignore-list patterns: {}", err));
+				return Err(format!(
+					"Error while processing ignore-list patterns: {}",
+					err
+				));
 			}
 		};
-		self.override_list = match RegexSetBuilder::new(&self.override_list_str).case_insensitive(case_insensitive).build() {
+		self.override_list = match RegexSetBuilder::new(&self.override_list_str)
+			.case_insensitive(case_insensitive)
+			.build()
+		{
 			Ok(rs) => rs,
 			Err(err) => {
-				return Err(format!("Error while processing override-list patterns: {}", err));
+				return Err(format!(
+					"Error while processing override-list patterns: {}",
+					err
+				));
 			}
 		};
 
