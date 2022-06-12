@@ -1,6 +1,6 @@
 [package]
 name = "copydeps"
-version = "5.0.0"
+version = "5.0.1"
 license = "GPL-3.0-or-later"
 description = "Find and copy all the .so / .dll files needed by an executable"
 readme = "README.md"
