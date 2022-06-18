@@ -19,6 +19,8 @@ use std::path::PathBuf;
 use std::process::exit;
 use std::vec::Vec;
 
+extern crate atty;
+
 extern crate getopts;
 use getopts::Options;
 use getopts::ParsingStyle;
@@ -49,6 +51,10 @@ fn print_help() {
 			"When omitted, defaults to the directory of the target executable.\n",
 			"\n",
 			"Program options:\n",
+			"--colour WHEN\n",
+			"  Specify whether to use colour codes in the output. WHEN can be one of\n",
+			"  \"always\", \"never\", or \"auto\" (the default). If \"auto\" is used,\n",
+			"  the program will use colours only when outputting to a terminal.\n",
 			"--dry-run\n",
 			"  Print the list of dependencies without actually copying the .so / .dll files.\n",
 			"--exedir\n",
@@ -94,7 +100,25 @@ fn verify_dir(dir: &PathBuf) -> Result<(), String> {
 	return Ok(());
 }
 
+fn parse_colour(value: &str) -> Result<Option<bool>, String> {
+	let value = value.trim();
+	if value.eq_ignore_ascii_case("auto") {
+		return Ok(None);
+	}
+	if value.eq_ignore_ascii_case("always") {
+		return Ok(Some(true));
+	}
+	if value.eq_ignore_ascii_case("never") {
+		return Ok(Some(false));
+	}
+	return Err(String::from(
+		"Value for the --colour option must be one of \"always\", \"never\", or \"auto\"",
+	));
+}
+
 pub struct Settings {
+	pub colour_stderr: bool,
+	pub colour_stdout: bool,
 	pub dry_run: bool,
 	pub executable: PathBuf,
 	pub ignore_list: RegexSet,
@@ -112,6 +136,8 @@ impl Settings {
 	pub fn new() -> Settings {
 		let empty_vector: Vec<&str> = vec![];
 		return Settings {
+			colour_stderr: false,
+			colour_stdout: false,
 			dry_run: false,
 			executable: PathBuf::new(),
 			ignore_list: RegexSet::new(&empty_vector).unwrap(),
@@ -145,6 +171,10 @@ impl Settings {
 		opts.optmulti("", "whitelist", "", "");
 
 		opts.optmulti("", "search-dir", "", "");
+
+		// Accept both spellings
+		opts.optopt("", "colour", "", "");
+		opts.optopt("", "color", "", "");
 
 		opts.optflag("", "dry-run", "");
 		opts.optflag("", "exedir", "");
@@ -249,6 +279,29 @@ impl Settings {
 		if matches.opt_present("verbose") {
 			settings.verbose = true;
 		}
+
+		let mut colour: Option<bool> = None;
+		if let Some(optval) = matches.opt_str("colour") {
+			colour = parse_colour(&optval)?;
+		} else if let Some(optval) = matches.opt_str("color") {
+			colour = parse_colour(&optval)?;
+		}
+		match colour {
+			Some(value) => {
+				settings.colour_stderr = value;
+				settings.colour_stdout = value;
+			}
+			None => match env::var_os("NO_COLOR") {
+				Some(_) => {
+					settings.colour_stderr = false;
+					settings.colour_stdout = false;
+				}
+				None => {
+					settings.colour_stderr = atty::is(atty::Stream::Stderr);
+					settings.colour_stdout = atty::is(atty::Stream::Stdout);
+				}
+			},
+		};
 
 		return Ok(settings);
 	}
