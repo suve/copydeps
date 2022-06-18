@@ -14,6 +14,7 @@ exclude = [".circleci/*"]
 debug = true
 
 [dependencies]
+atty = "^0.2.14"
 getopts = "^0.2.21"
 goblin = "^0.5.2"
 lazy_static = "^1.4.0"
