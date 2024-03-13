@@ -1,6 +1,6 @@
 /**
  * This file is part of the copydeps program.
- * Copyright (C) 2020-2021 Artur "suve" Iwicki
+ * Copyright (C) 2020-2021, 2024 suve (a.k.a. Artur Frenszek-Iwicki)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License,
@@ -14,9 +14,12 @@
  * You should have received a copy of the GNU General Public License along with
  * this program (LICENCE.txt). If not, see <https://www.gnu.org/licenses/>.
  */
-use std::fs;
-use std::path::Path;
-use std::vec::Vec;
+use std::{
+	fmt::{Display, Formatter},
+	fs,
+	path::{Path, PathBuf},
+	vec::Vec,
+};
 
 extern crate goblin;
 use goblin::elf::Elf;
@@ -74,50 +77,68 @@ fn get_deps_pe(exe: PE) -> Object {
 	};
 }
 
-pub fn get_deps(filename: &Path) -> Result<Object, String> {
+pub enum GetDepsError {
+	FailedToOpenFile(PathBuf, std::io::Error),
+	FailedToParseFile(PathBuf, goblin::error::Error),
+	UnsupportedObjectType(PathBuf, String),
+}
+
+impl Display for GetDepsError {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		match self {
+			GetDepsError::FailedToOpenFile(path, err) => write!(
+				f,
+				"Failed to open file \"{}\": {}",
+				path.to_string_lossy(),
+				err
+			),
+			GetDepsError::FailedToParseFile(path, err) => write!(
+				f,
+				"Failed to parse file \"{}\": {}",
+				path.to_string_lossy(),
+				err
+			),
+			GetDepsError::UnsupportedObjectType(path, objtype) => write!(
+				f,
+				"File \"{}\" is an unsupported object type \"{}\"",
+				path.to_string_lossy(),
+				objtype
+			),
+		}
+	}
+}
+
+pub fn get_deps(filename: &Path) -> Result<Object, GetDepsError> {
 	let bytes = match fs::read(filename) {
 		Ok(bytes) => bytes,
-		Err(msg) => {
-			return Err(format!(
-				"Failed to open file \"{}\": {}",
-				filename.to_string_lossy(),
-				msg
-			));
+		Err(e) => {
+			return Err(GetDepsError::FailedToOpenFile(filename.to_path_buf(), e));
 		}
 	};
 
 	let object = match Goblin::parse(&bytes) {
 		Ok(obj) => obj,
-		Err(msg) => {
-			return Err(format!(
-				"Failed to parse file \"{}\": {}",
-				filename.to_string_lossy(),
-				msg
-			));
+		Err(e) => {
+			return Err(GetDepsError::FailedToParseFile(filename.to_path_buf(), e));
 		}
 	};
 
 	match object {
-		Goblin::Elf(elf) => return Ok(get_deps_elf(elf)),
-		Goblin::PE(pe) => return Ok(get_deps_pe(pe)),
-		Goblin::Mach(_) => {
-			return Err(format!(
-				"File \"{}\" is an unsupported object type \"Mach\"",
-				filename.to_string_lossy()
-			))
-		}
-		Goblin::Archive(_) => {
-			return Err(format!(
-				"File \"{}\" is an unsupported object type \"Archive\"",
-				filename.to_string_lossy()
-			))
-		}
-		Goblin::Unknown(magic) => {
-			return Err(format!(
-				"File \"{}\" is an unsupported object type (magic: {})",
-				filename.to_string_lossy(),
-				magic
-			))
-		}
+		Goblin::Elf(elf) => Ok(get_deps_elf(elf)),
+		Goblin::PE(pe) => Ok(get_deps_pe(pe)),
+		_ => Err(GetDepsError::UnsupportedObjectType(
+			filename.to_path_buf(),
+			obj_type_name(&object),
+		)),
+	}
+}
+
+fn obj_type_name(obj: &goblin::Object) -> String {
+	match obj {
+		Goblin::Elf(_) => "Elf".to_string(),
+		Goblin::PE(_) => "PE".to_string(),
+		Goblin::Mach(_) => "Mach".to_string(),
+		Goblin::Archive(_) => "Archive".to_string(),
+		Goblin::Unknown(magic) => format!("Unknown (magic: {})", magic),
 	}
 }

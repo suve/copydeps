@@ -23,11 +23,10 @@ extern crate regex;
 use regex::RegexSet;
 use regex::RegexSetBuilder;
 
-use crate::parser::get_deps;
-use crate::parser::Object;
-use crate::parser::ObjectType;
-
-use crate::settings::Settings;
+use crate::{
+	parser::{get_deps, GetDepsError, Object, ObjectType},
+	settings::Settings,
+};
 
 pub enum Status {
 	Ignored,
@@ -167,7 +166,7 @@ pub fn resolve(name: &String, type_: &ObjectType, settings: &Settings) -> Status
 pub fn resolve_recursively(
 	obj: &Object,
 	settings: &Settings,
-) -> Result<HashMap<String, Status>, String> {
+) -> Result<HashMap<String, Status>, GetDepsError> {
 	let mut result: HashMap<String, Status> = HashMap::new();
 
 	let mut unresolved: Vec<String> = obj.deps.clone();
@@ -183,8 +182,8 @@ pub fn resolve_recursively(
 				Ok(mut sub_obj) => {
 					unresolved.append(&mut sub_obj.deps);
 				}
-				Err(msg) => {
-					return Err(msg);
+				Err(e) => {
+					return Err(e);
 				}
 			}
 		}
