@@ -1,6 +1,6 @@
 /**
  * This file is part of the copydeps program.
- * Copyright (C) 2020-2021 Artur "suve" Iwicki
+ * Copyright (C) 2020-2021, 2024 suve (a.k.a. Artur Frenszek-Iwicki)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License,
@@ -140,8 +140,14 @@ pub fn resolve(name: &String, type_: &ObjectType, settings: &Settings) -> Status
 	let search_paths = match type_ {
 		ObjectType::Elf32 => vec!["/lib/", "/usr/lib/", "/usr/local/lib/"],
 		ObjectType::Elf64 => vec!["/lib64/", "/usr/lib64/", "/usr/local/lib64/"],
-		ObjectType::Exe32 => vec!["/usr/i686-w64-mingw32/sys-root/mingw/bin/"],
-		ObjectType::Exe64 => vec!["/usr/x86_64-w64-mingw32/sys-root/mingw/bin/"],
+		ObjectType::Exe32 => vec![
+			"/usr/i686-w64-mingw32/sys-root/mingw/bin/", // Fedora
+			"/usr/i686-w64-mingw32/lib/",                // Debian
+		],
+		ObjectType::Exe64 => vec![
+			"/usr/x86_64-w64-mingw32/sys-root/mingw/bin/", // Fedora
+			"/usr/x86_64-w64-mingw32/lib/",                // Debian
+		],
 	};
 
 	for dir in search_paths {
