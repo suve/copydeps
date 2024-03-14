@@ -1,6 +1,6 @@
 /**
  * This file is part of the copydeps program.
- * Copyright (C) 2020-2021 Artur "suve" Iwicki
+ * Copyright (C) 2020-2021, 2024 suve (a.k.a. Artur Frenszek-Iwicki)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License,
@@ -14,10 +14,14 @@
  * You should have received a copy of the GNU General Public License along with
  * this program (LICENCE.txt). If not, see <https://www.gnu.org/licenses/>.
  */
-use std::env;
-use std::path::PathBuf;
-use std::process::exit;
-use std::vec::Vec;
+use std::{
+	env,
+	fmt::{Display, Formatter},
+	fs,
+	path::{Path, PathBuf},
+	process::exit,
+	vec::Vec,
+};
 
 extern crate getopts;
 use getopts::Options;
@@ -81,17 +85,24 @@ fn print_version() {
 	);
 }
 
-fn verify_dir(dir: &PathBuf) -> Result<(), String> {
-	if !dir.exists() {
-		return Err(format!(
-			"Directory \"{}\" does not exist",
-			dir.to_str().unwrap()
-		));
+fn verify_dir(dir: &Path) -> Result<(), SettingsError> {
+	match fs::metadata(dir) {
+		Ok(meta) => match meta.is_dir() {
+			true => Ok(()),
+			false => Err(SettingsError::DirectoryNotADirectory(dir.to_path_buf())),
+		},
+		Err(e) => Err(SettingsError::DirectoryNotFound(dir.to_path_buf(), e)),
 	}
-	if !dir.is_dir() {
-		return Err(format!("\"{}\" is not a directory", dir.to_str().unwrap()));
+}
+
+fn canonicalize_path(path: &Path) -> Result<PathBuf, SettingsError> {
+	match path.canonicalize() {
+		Ok(value) => Ok(value),
+		Err(e) => Err(SettingsError::FailedToCanonicalizePath(
+			path.to_path_buf(),
+			e,
+		)),
 	}
-	return Ok(());
 }
 
 pub struct Settings {
@@ -109,9 +120,10 @@ pub struct Settings {
 }
 
 impl Settings {
-	pub fn new() -> Settings {
+	// Unfortunately for us, RegexSet does not implement Default
+	fn new() -> Settings {
 		let empty_vector: Vec<&str> = vec![];
-		return Settings {
+		Settings {
 			dry_run: false,
 			executable: PathBuf::new(),
 			ignore_list: RegexSet::new(&empty_vector).unwrap(),
@@ -123,10 +135,10 @@ impl Settings {
 
 			ignore_list_str: vec![],
 			override_list_str: vec![],
-		};
+		}
 	}
 
-	pub fn new_from_argv() -> Result<Settings, String> {
+	pub fn new_from_argv() -> Result<Settings, SettingsError> {
 		let args: Vec<String> = env::args().collect();
 		let mut settings = Settings::new();
 
@@ -152,10 +164,7 @@ impl Settings {
 		opts.optflag("", "no-clobber", "");
 		opts.optflag("", "verbose", "");
 
-		let matches = match opts.parse(args) {
-			Ok(m) => m,
-			Err(f) => return Err(f.to_string()),
-		};
+		let matches = opts.parse(args)?;
 
 		if matches.opt_present("help") {
 			print_help();
@@ -167,54 +176,28 @@ impl Settings {
 		}
 
 		match matches.free.len() {
-			0 => return Err(String::from("Failed to parse arguments")),
-			1 => return Err(String::from("Missing required argument: EXECUTABLE")),
+			0 | 1 => return Err(SettingsError::ExecutableNotSpecified),
 			2 | 3 => {}
-			_ => return Err(String::from("Unexpected extra arguments")),
+			_ => return Err(SettingsError::TooManyArguments(matches.free.len() - 1)),
 		}
 
 		let executable = PathBuf::from(matches.free.get(1).unwrap());
-		if !executable.exists() {
-			return Err(format!(
-				"File \"{}\" does not exist",
-				executable.to_str().unwrap()
-			));
-		}
-		if !executable.is_file() {
-			return Err(format!(
-				"File \"{}\" is not a regular file",
-				executable.to_str().unwrap()
-			));
-		}
-
-		settings.executable = match executable.canonicalize() {
-			Ok(pb) => pb,
-			Err(msg) => {
-				return Err(format!(
-					"Failed to canonicalize path \"{}\": {}",
-					executable.to_string_lossy(),
-					msg
-				))
+		match fs::metadata(&executable) {
+			Ok(meta) => {
+				if !meta.is_file() {
+					return Err(SettingsError::ExecutableNotAFile(executable));
+				}
 			}
-		};
+			Err(e) => return Err(SettingsError::ExecutableNotFound(executable, e)),
+		}
+		settings.executable = canonicalize_path(&executable)?;
+
 		let executable_dir = settings.executable.parent().unwrap().to_path_buf();
 
 		if matches.free.len() == 3 {
 			let target_dir = PathBuf::from(matches.free.get(2).unwrap());
-			match verify_dir(&target_dir) {
-				Ok(_) => {}
-				Err(msg) => return Err(msg),
-			}
-			settings.target_dir = match target_dir.canonicalize() {
-				Ok(pb) => pb,
-				Err(msg) => {
-					return Err(format!(
-						"Failed to canonicalize path \"{}\": {}",
-						target_dir.to_string_lossy(),
-						msg
-					))
-				}
-			};
+			verify_dir(&target_dir)?;
+			settings.target_dir = canonicalize_path(&target_dir)?;
 		} else {
 			settings.target_dir = executable_dir.clone();
 		}
@@ -231,10 +214,8 @@ impl Settings {
 
 		for entry in matches.opt_strs("search-dir") {
 			let entry_pb = PathBuf::from(entry);
-			match verify_dir(&entry_pb) {
-				Ok(_) => settings.search_dirs.push(entry_pb),
-				Err(msg) => return Err(msg),
-			}
+			verify_dir(&entry_pb)?;
+			settings.search_dirs.push(entry_pb);
 		}
 
 		if matches.opt_present("dry-run") {
@@ -253,32 +234,99 @@ impl Settings {
 		return Ok(settings);
 	}
 
-	pub fn compile_lists(&mut self, case_insensitive: bool) -> Result<(), String> {
+	pub fn compile_lists(&mut self, case_insensitive: bool) -> Result<(), ListCompilationError> {
 		self.ignore_list = match RegexSetBuilder::new(&self.ignore_list_str)
 			.case_insensitive(case_insensitive)
 			.build()
 		{
 			Ok(rs) => rs,
-			Err(err) => {
-				return Err(format!(
-					"Error while processing ignore-list patterns: {}",
-					err
-				));
-			}
+			Err(e) => return Err(ListCompilationError::IgnoreList(e)),
 		};
 		self.override_list = match RegexSetBuilder::new(&self.override_list_str)
 			.case_insensitive(case_insensitive)
 			.build()
 		{
 			Ok(rs) => rs,
-			Err(err) => {
-				return Err(format!(
-					"Error while processing override-list patterns: {}",
-					err
-				));
-			}
+			Err(e) => return Err(ListCompilationError::OverrideList(e)),
 		};
 
 		return Ok(());
+	}
+}
+
+pub enum SettingsError {
+	FailedToParseArguments(getopts::Fail),
+	TooManyArguments(usize),
+	ExecutableNotSpecified,
+	ExecutableNotFound(PathBuf, std::io::Error),
+	ExecutableNotAFile(PathBuf),
+	DirectoryNotFound(PathBuf, std::io::Error),
+	DirectoryNotADirectory(PathBuf),
+	FailedToCanonicalizePath(PathBuf, std::io::Error),
+}
+
+impl From<getopts::Fail> for SettingsError {
+	fn from(value: getopts::Fail) -> Self {
+		Self::FailedToParseArguments(value)
+	}
+}
+
+impl Display for SettingsError {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		match self {
+			SettingsError::FailedToParseArguments(e) => {
+				write!(f, "Failed to parse arguments: {}", e)
+			}
+			SettingsError::TooManyArguments(count) => {
+				write!(f, "Too many arguments (expected 1 or 2, got {})", count)
+			}
+			SettingsError::ExecutableNotSpecified => {
+				write!(f, "Missing required argument: EXECUTABLE")
+			}
+			SettingsError::ExecutableNotFound(path, err) => write!(
+				f,
+				"Failed to access file \"{}\": {}",
+				path.to_string_lossy(),
+				err
+			),
+			SettingsError::ExecutableNotAFile(path) => write!(
+				f,
+				"Path \"{}\" is not a regular file",
+				path.to_string_lossy()
+			),
+			SettingsError::DirectoryNotFound(path, err) => write!(
+				f,
+				"Failed to access directory \"{}\": {}",
+				path.to_string_lossy(),
+				err
+			),
+			SettingsError::DirectoryNotADirectory(path) => {
+				write!(f, "Path \"{}\" is not a directory", path.to_string_lossy())
+			}
+			SettingsError::FailedToCanonicalizePath(path, err) => write!(
+				f,
+				"Failed to canonicalize path \"{}\": {}",
+				path.to_string_lossy(),
+				err
+			),
+		}
+	}
+}
+
+pub enum ListCompilationError {
+	IgnoreList(regex::Error),
+	OverrideList(regex::Error),
+}
+
+impl Display for ListCompilationError {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		match self {
+			ListCompilationError::IgnoreList(e) => {
+				write!(f, "Error while processing ignore-list patterns: {}", e)
+			}
+			ListCompilationError::OverrideList(e) => {
+				write!(f, "Error while processing override-list patterns: {}", e)
+			}
+		}
 	}
 }
