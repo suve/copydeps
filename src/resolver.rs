@@ -68,12 +68,12 @@ fn find_in_directory(name: &String, type_: &ObjectType, dir: &Path) -> Option<St
 }
 
 lazy_static! {
-	static ref IGNORELIST_ELF32: RegexSet = RegexSetBuilder::new(vec![r"ld-linux\.so*"])
-		.build()
-		.unwrap();
-	static ref IGNORELIST_ELF64: RegexSet = RegexSetBuilder::new(vec![r"ld-linux-x86-64\.so*"])
-		.build()
-		.unwrap();
+	// This regex tries to catch all the names for ld-linux found in glibc.
+	static ref IGNORELIST_ELF: RegexSet =
+		RegexSetBuilder::new(vec![r"^ld-linux(?:|-[a-zA-Z0-9_\-]+)\.so\.[0-9.]*$",])
+			.build()
+			.unwrap();
+
 	static ref IGNORELIST_EXE: RegexSet = RegexSetBuilder::new(vec![
 		r"^ADVAPI32\.dll$",
 		r"^COMCTL32\.dll$",
@@ -110,12 +110,10 @@ fn exists_in_ignore_list(name: &String, type_: &ObjectType, settings: &Settings)
 	}
 
 	let builtin_ignore_list: &RegexSet = match type_ {
-		ObjectType::Elf32 => &IGNORELIST_ELF32,
-		ObjectType::Elf64 => &IGNORELIST_ELF64,
+		ObjectType::Elf32 | ObjectType::Elf64 => &IGNORELIST_ELF,
 		ObjectType::Exe32 | ObjectType::Exe64 => &IGNORELIST_EXE,
 	};
-
-	return builtin_ignore_list.is_match(name);
+	builtin_ignore_list.is_match(name)
 }
 
 // TODO: Think of a way to reduce duplication between /lib and /usr/lib
