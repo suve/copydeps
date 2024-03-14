@@ -118,6 +118,80 @@ fn exists_in_ignore_list(name: &String, type_: &ObjectType, settings: &Settings)
 	return builtin_ignore_list.is_match(name);
 }
 
+// TODO: Think of a way to reduce duplication between /lib and /usr/lib
+//       for the Debian triplets.
+const SEARCH_PATH_ELF32: &[&str] = &[
+	"/lib/",
+	"/usr/lib/",
+	// Debian triplets (https://wiki.debian.org/Multiarch/Tuples)
+	#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+	"/lib/i386-linux-gnu/",
+	#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+	"/usr/lib/i386-linux-gnu/",
+	#[cfg(target_arch = "arm")]
+	"/lib/arm-linux-gnu/",
+	#[cfg(target_arch = "arm")]
+	"/usr/lib/arm-linux-gnu/",
+	#[cfg(target_arch = "arm")]
+	"/lib/arm-linux-gnueabi/",
+	#[cfg(target_arch = "arm")]
+	"/usr/lib/arm-linux-gnueabi/",
+	#[cfg(target_arch = "arm")]
+	"/lib/arm-linux-gnueabihf/",
+	#[cfg(target_arch = "arm")]
+	"/usr/lib/arm-linux-gnueabihf/",
+	#[cfg(target_arch = "powerpc")]
+	"/lib/powerpc-linux-gnu/",
+	#[cfg(target_arch = "powerpc")]
+	"/usr/lib/powerpc-linux-gnu/",
+	// Local
+	"/usr/local/lib/",
+];
+
+const SEARCH_PATH_ELF64: &[&str] = &[
+	"/lib64/",
+	"/usr/lib64/",
+	// Debian triplets (https://wiki.debian.org/Multiarch/Tuples)
+	#[cfg(target_arch = "x86_64")]
+	"/lib/x86_64-linux-gnu/",
+	#[cfg(target_arch = "x86_64")]
+	"/usr/lib/x86_64-linux-gnu/",
+	#[cfg(target_arch = "aarch64")]
+	"/lib/aarch64-linux-gnu/",
+	#[cfg(target_arch = "aarch64")]
+	"/usr/lib/aarch64-linux-gnu/",
+	#[cfg(all(target_arch = "powerpc64", target_endian = "big"))]
+	"/lib/powerpc64-linux-gnu/",
+	#[cfg(all(target_arch = "powerpc64", target_endian = "big"))]
+	"/usr/lib/powerpc64-linux-gnu/",
+	#[cfg(all(target_arch = "powerpc64", target_endian = "little"))]
+	"/lib/powerpc64le-linux-gnu/",
+	#[cfg(all(target_arch = "powerpc64", target_endian = "little"))]
+	"/usr/lib/powerpc64le-linux-gnu/",
+	#[cfg(target_arch = "riscv64")]
+	"/lib/riscv64-linux-gnu/",
+	#[cfg(target_arch = "riscv64")]
+	"/usr/lib/riscv64-linux-gnu/",
+	#[cfg(target_arch = "s390x")]
+	"/lib/s390x-linux-gnu/",
+	#[cfg(target_arch = "s390x")]
+	"/usr/lib/s390x-linux-gnu/",
+	// Local
+	"/usr/local/lib64/",
+];
+
+const SEARCH_PATH_EXE32: &[&str] = &[
+	"/usr/i686-w64-mingw32/lib/",                // Debian
+	"/usr/i686-w64-mingw32/sys-root/mingw/bin/", // Fedora
+	"/usr/i686-w64-mingw32/sys-root/mingw/lib/", // Maybe used by some other distro?
+];
+
+const SEARCH_PATH_EXE64: &[&str] = &[
+	"/usr/x86_64-w64-mingw32/lib/",                // Debian
+	"/usr/x86_64-w64-mingw32/sys-root/mingw/bin/", // Fedora
+	"/usr/x86_64-w64-mingw32/sys-root/mingw/lib/", // Maybe used by some other distro?
+];
+
 pub fn resolve(name: &String, type_: &ObjectType, settings: &Settings) -> Status {
 	if !settings.override_list.is_match(name) {
 		if exists_in_ignore_list(name, type_, settings) {
@@ -137,18 +211,15 @@ pub fn resolve(name: &String, type_: &ObjectType, settings: &Settings) -> Status
 	}
 
 	let search_paths = match type_ {
-		ObjectType::Elf32 => vec!["/lib/", "/usr/lib/", "/usr/local/lib/"],
-		ObjectType::Elf64 => vec!["/lib64/", "/usr/lib64/", "/usr/local/lib64/"],
-		ObjectType::Exe32 => vec![
-			"/usr/i686-w64-mingw32/sys-root/mingw/bin/", // Fedora
-			"/usr/i686-w64-mingw32/lib/",                // Debian
-		],
-		ObjectType::Exe64 => vec![
-			"/usr/x86_64-w64-mingw32/sys-root/mingw/bin/", // Fedora
-			"/usr/x86_64-w64-mingw32/lib/",                // Debian
-		],
+		ObjectType::Elf32 => SEARCH_PATH_ELF32,
+		ObjectType::Elf64 => SEARCH_PATH_ELF64,
+		ObjectType::Exe32 => SEARCH_PATH_EXE32,
+		ObjectType::Exe64 => SEARCH_PATH_EXE64,
 	};
 
+	// TODO: Detect if /lib{,64} is a symlink to /usr/lib{,64}.
+	//       Probably the best solution would be to replace the const lists
+	//       with some custom iterator type.
 	for dir in search_paths {
 		match find_in_directory(&name, &type_, &Path::new(dir)) {
 			Some(resolved) => {
