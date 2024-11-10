@@ -137,8 +137,13 @@ fn obj_type_name(obj: &goblin::Object) -> String {
 	match obj {
 		Goblin::Elf(_) => "Elf".to_string(),
 		Goblin::PE(_) => "PE".to_string(),
+		Goblin::TE(_) => "TE".to_string(),
+		Goblin::COFF(_) => "COFF".to_string(),
 		Goblin::Mach(_) => "Mach".to_string(),
 		Goblin::Archive(_) => "Archive".to_string(),
 		Goblin::Unknown(magic) => format!("Unknown (magic: {})", magic),
+		// Since goblin 0.8, the Object enum is non-exhaustive. Fall back to the Debug
+		// implementation if we encounter a new enum value.
+		_ => format!("{obj:?}"),
 	}
 }
