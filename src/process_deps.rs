@@ -1,6 +1,6 @@
 /**
  * This file is part of the copydeps program.
- * Copyright (C) 2020-2021 Artur "suve" Iwicki
+ * Copyright (C) 2020-2021, 2024 suve (a.k.a. Artur Frenszek-Iwicki)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License,
@@ -34,7 +34,7 @@ enum ProcessingStatus {
 }
 
 fn should_copy(
-	name: &String,
+	name: &str,
 	source: &PathBuf,
 	destination: &PathBuf,
 	settings: &Settings,
@@ -77,7 +77,7 @@ fn should_copy(
 	};
 }
 
-fn dep_copy(name: &String, status: &Status, settings: &Settings) -> ProcessingStatus {
+fn dep_copy(name: &str, status: &Status, settings: &Settings) -> ProcessingStatus {
 	match status {
 		Status::Ignored => {
 			if settings.verbose {
@@ -123,7 +123,7 @@ fn dep_copy(name: &String, status: &Status, settings: &Settings) -> ProcessingSt
 	}
 }
 
-fn dep_print(name: &String, status: &Status, _settings: &Settings) -> ProcessingStatus {
+fn dep_print(name: &str, status: &Status, _settings: &Settings) -> ProcessingStatus {
 	match status {
 		Status::Ignored => {
 			println!("\"{}\": (ignored)", name);
@@ -140,7 +140,7 @@ fn dep_print(name: &String, status: &Status, _settings: &Settings) -> Processing
 	}
 }
 
-type DepCallback = fn(name: &String, status: &Status, settings: &Settings) -> ProcessingStatus;
+type DepCallback = fn(name: &str, status: &Status, settings: &Settings) -> ProcessingStatus;
 
 fn process_deps(
 	deps: &HashMap<String, Status>,

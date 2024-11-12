@@ -34,7 +34,7 @@ pub enum Status {
 	Resolved(PathBuf),
 }
 
-fn find_in_directory(name: &String, type_: &ObjectType, dir: &Path) -> Option<String> {
+fn find_in_directory(name: &str, type_: &ObjectType, dir: &Path) -> Option<String> {
 	match type_ {
 		// With ELF, look for an exact match.
 		ObjectType::Elf32 | ObjectType::Elf64 => {
@@ -42,7 +42,7 @@ fn find_in_directory(name: &String, type_: &ObjectType, dir: &Path) -> Option<St
 			filepath.push(name);
 
 			if filepath.exists() {
-				return Some(name.parse().unwrap());
+				return Some(name.to_owned());
 			}
 		}
 		// With PE, iterate over the directory entries and look for a case-insensitive match.
@@ -104,7 +104,7 @@ lazy_static! {
 	.unwrap();
 }
 
-fn exists_in_ignore_list(name: &String, type_: &ObjectType, settings: &Settings) -> bool {
+fn exists_in_ignore_list(name: &str, type_: &ObjectType, settings: &Settings) -> bool {
 	if settings.ignore_list.is_match(name) {
 		return true;
 	}
@@ -190,7 +190,7 @@ const SEARCH_PATH_EXE64: &[&str] = &[
 	"/usr/x86_64-w64-mingw32/sys-root/mingw/lib/", // Maybe used by some other distro?
 ];
 
-pub fn resolve(name: &String, type_: &ObjectType, settings: &Settings) -> Status {
+pub fn resolve(name: &str, type_: &ObjectType, settings: &Settings) -> Status {
 	if !settings.override_list.is_match(name) {
 		if exists_in_ignore_list(name, type_, settings) {
 			return Status::Ignored;
@@ -198,7 +198,7 @@ pub fn resolve(name: &String, type_: &ObjectType, settings: &Settings) -> Status
 	}
 
 	for dir in &settings.search_dirs {
-		match find_in_directory(&name, &type_, dir.as_path()) {
+		match find_in_directory(name, type_, dir.as_path()) {
 			Some(resolved) => {
 				let mut path = dir.clone();
 				path.push(resolved);
@@ -219,7 +219,7 @@ pub fn resolve(name: &String, type_: &ObjectType, settings: &Settings) -> Status
 	//       Probably the best solution would be to replace the const lists
 	//       with some custom iterator type.
 	for dir in search_paths {
-		match find_in_directory(&name, &type_, &Path::new(dir)) {
+		match find_in_directory(name, type_, Path::new(dir)) {
 			Some(resolved) => {
 				let mut path = PathBuf::from(dir);
 				path.push(resolved);
