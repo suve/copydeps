@@ -61,20 +61,16 @@ fn should_copy(
 					name
 				);
 			}
-			return Ok(false);
+			Ok(false)
 		}
-		Err(err) => {
-			return Err(format!(
-				"Failed to determine if \"{}\" and \"{}\" refer to the same file: {}",
-				source.to_string_lossy(),
-				destination.to_string_lossy(),
-				err
-			));
-		}
-		Ok(false) => {
-			return Ok(true);
-		}
-	};
+		Err(err) => Err(format!(
+			"Failed to determine if \"{}\" and \"{}\" refer to the same file: {}",
+			source.to_string_lossy(),
+			destination.to_string_lossy(),
+			err
+		)),
+		Ok(false) => Ok(true),
+	}
 }
 
 fn dep_copy(name: &str, status: &Status, settings: &Settings) -> ProcessingStatus {
@@ -83,11 +79,11 @@ fn dep_copy(name: &str, status: &Status, settings: &Settings) -> ProcessingStatu
 			if settings.verbose {
 				println!("\"{}\": ignored, skipping", name)
 			}
-			return ProcessingStatus::Ignored;
+			ProcessingStatus::Ignored
 		}
 		Status::FailedToResolve => {
 			eprintln!("{}: failed to resolve \"{}\"", PROGRAM_NAME, name);
-			return ProcessingStatus::ResolveError;
+			ProcessingStatus::ResolveError
 		}
 		Status::Resolved(resolved) => {
 			let mut destination = settings.target_dir.clone();
@@ -96,11 +92,9 @@ fn dep_copy(name: &str, status: &Status, settings: &Settings) -> ProcessingStatu
 			match should_copy(name, resolved, &destination, settings) {
 				Err(err) => {
 					eprintln!("{}: {}", PROGRAM_NAME, err);
-					return ProcessingStatus::Failed;
+					ProcessingStatus::Failed
 				}
-				Ok(false) => {
-					return ProcessingStatus::Skipped;
-				}
+				Ok(false) => ProcessingStatus::Skipped,
 				Ok(true) => match fs::copy(resolved, &destination) {
 					Ok(_) => {
 						if settings.verbose {
@@ -111,11 +105,11 @@ fn dep_copy(name: &str, status: &Status, settings: &Settings) -> ProcessingStatu
 								destination.to_string_lossy()
 							)
 						}
-						return ProcessingStatus::Success;
+						ProcessingStatus::Success
 					}
 					Err(err) => {
 						eprintln!("{}: failed to copy \"{}\": {}", PROGRAM_NAME, name, err);
-						return ProcessingStatus::Failed;
+						ProcessingStatus::Failed
 					}
 				},
 			}
@@ -127,15 +121,15 @@ fn dep_print(name: &str, status: &Status, _settings: &Settings) -> ProcessingSta
 	match status {
 		Status::Ignored => {
 			println!("\"{}\": (ignored)", name);
-			return ProcessingStatus::Ignored;
+			ProcessingStatus::Ignored
 		}
 		Status::FailedToResolve => {
 			println!("\"{}\": (failed to resolve)", name);
-			return ProcessingStatus::ResolveError;
+			ProcessingStatus::ResolveError
 		}
 		Status::Resolved(r) => {
 			println!("\"{}\": {}", name, r.to_string_lossy());
-			return ProcessingStatus::Success;
+			ProcessingStatus::Success
 		}
 	}
 }
@@ -165,7 +159,7 @@ fn process_deps(
 		}
 	}
 
-	return result;
+	result
 }
 
 pub struct ProcessingResult {
@@ -175,9 +169,9 @@ pub struct ProcessingResult {
 }
 
 pub fn copy_deps(deps: &HashMap<String, Status>, settings: &Settings) -> ProcessingResult {
-	return process_deps(deps, dep_copy, settings);
+	process_deps(deps, dep_copy, settings)
 }
 
 pub fn print_deps(deps: &HashMap<String, Status>, settings: &Settings) -> ProcessingResult {
-	return process_deps(deps, dep_print, settings);
+	process_deps(deps, dep_print, settings)
 }

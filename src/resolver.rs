@@ -64,7 +64,7 @@ fn find_in_directory(name: &str, type_: &ObjectType, dir: &Path) -> Option<Strin
 		}
 	}
 
-	return None;
+	None
 }
 
 lazy_static! {
@@ -229,7 +229,7 @@ pub fn resolve(name: &str, type_: &ObjectType, settings: &Settings) -> Status {
 		}
 	}
 
-	return Status::FailedToResolve;
+	Status::FailedToResolve
 }
 
 pub fn resolve_recursively(
@@ -259,5 +259,5 @@ pub fn resolve_recursively(
 		result.insert(entry, status);
 	}
 
-	return Ok(result);
+	Ok(result)
 }

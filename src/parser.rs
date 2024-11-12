@@ -35,10 +35,7 @@ pub enum ObjectType {
 
 impl ObjectType {
 	pub fn is_exe(&self) -> bool {
-		match self {
-			ObjectType::Exe32 | ObjectType::Exe64 => return true,
-			_ => return false,
-		}
+		matches!(self, ObjectType::Exe32 | ObjectType::Exe64)
 	}
 }
 
@@ -48,7 +45,7 @@ pub struct Object {
 }
 
 fn get_deps_elf(elf: Elf) -> Object {
-	return Object {
+	Object {
 		type_: if elf.is_64 {
 			ObjectType::Elf64
 		} else {
@@ -59,11 +56,11 @@ fn get_deps_elf(elf: Elf) -> Object {
 			.iter()
 			.map(|item| String::from(*item))
 			.collect(),
-	};
+	}
 }
 
 fn get_deps_pe(exe: PE) -> Object {
-	return Object {
+	Object {
 		type_: if exe.is_64 {
 			ObjectType::Exe64
 		} else {
@@ -74,7 +71,7 @@ fn get_deps_pe(exe: PE) -> Object {
 			.iter()
 			.map(|item| String::from(*item))
 			.collect(),
-	};
+	}
 }
 
 pub enum GetDepsError {

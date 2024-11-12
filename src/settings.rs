@@ -231,7 +231,7 @@ impl Settings {
 			settings.verbose = true;
 		}
 
-		return Ok(settings);
+		Ok(settings)
 	}
 
 	pub fn compile_lists(&mut self, case_insensitive: bool) -> Result<(), ListCompilationError> {
@@ -250,7 +250,7 @@ impl Settings {
 			Err(e) => return Err(ListCompilationError::OverrideList(e)),
 		};
 
-		return Ok(());
+		Ok(())
 	}
 }
 
