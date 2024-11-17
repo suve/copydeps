@@ -50,13 +50,10 @@ fn find_in_directory(name: &str, type_: ObjectType, dir: &Path) -> Option<String
 			if let Ok(entries) = fs::read_dir(dir) {
 				for entry in entries {
 					if let Ok(entry) = entry {
-						match entry.file_name().to_str() {
-							Some(entry_name) => {
-								if name.eq_ignore_ascii_case(entry_name) {
-									return Some(String::from(entry_name));
-								}
+						if let Some(entry_name) = entry.file_name().to_str() {
+							if name.eq_ignore_ascii_case(entry_name) {
+								return Some(String::from(entry_name));
 							}
-							None => { /* ignore */ }
 						}
 					}
 				}
