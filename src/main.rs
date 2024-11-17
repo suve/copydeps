@@ -32,6 +32,8 @@ use process_deps::print_deps;
 mod resolver;
 use resolver::resolve_recursively;
 
+mod search_paths;
+
 mod settings;
 use settings::Settings;
 

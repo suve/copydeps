@@ -26,6 +26,7 @@ use goblin::elf::Elf;
 use goblin::pe::PE;
 use goblin::Object as Goblin;
 
+#[derive(Clone, Copy)]
 pub enum ObjectType {
 	Elf32,
 	Elf64,
