@@ -16,9 +16,6 @@
  */
 use std::process::exit;
 
-#[macro_use]
-extern crate lazy_static;
-
 mod exit_status;
 use exit_status::*;
 

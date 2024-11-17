@@ -18,6 +18,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
+use std::sync::OnceLock;
 
 extern crate regex;
 use regex::RegexSet;
@@ -64,14 +65,15 @@ fn find_in_directory(name: &str, type_: ObjectType, dir: &Path) -> Option<String
 	None
 }
 
-lazy_static! {
+fn build_elf_ignorelist() -> RegexSet {
 	// This regex tries to catch all the names for ld-linux found in glibc.
-	static ref IGNORELIST_ELF: RegexSet =
-		RegexSetBuilder::new(vec![r"^ld-linux(?:|-[a-zA-Z0-9_\-]+)\.so\.[0-9.]*$",])
-			.build()
-			.unwrap();
+	RegexSetBuilder::new(vec![r"^ld-linux(?:|-[a-zA-Z0-9_\-]+)\.so\.[0-9.]*$"])
+		.build()
+		.unwrap()
+}
 
-	static ref IGNORELIST_EXE: RegexSet = RegexSetBuilder::new(vec![
+fn build_exe_ignorelist() -> RegexSet {
+	RegexSetBuilder::new(vec![
 		r"^ADVAPI32\.dll$",
 		r"^COMCTL32\.dll$",
 		r"^COMDLG32\.dll$",
@@ -98,8 +100,11 @@ lazy_static! {
 	])
 	.case_insensitive(true)
 	.build()
-	.unwrap();
+	.unwrap()
 }
+
+static IGNORELIST_ELF: OnceLock<RegexSet> = OnceLock::new();
+static IGNORELIST_EXE: OnceLock<RegexSet> = OnceLock::new();
 
 fn exists_in_ignore_list(name: &str, type_: ObjectType, settings: &Settings) -> bool {
 	if settings.ignore_list.is_match(name) {
@@ -107,8 +112,8 @@ fn exists_in_ignore_list(name: &str, type_: ObjectType, settings: &Settings) -> 
 	}
 
 	let builtin_ignore_list: &RegexSet = match type_ {
-		ObjectType::Elf32 | ObjectType::Elf64 => &IGNORELIST_ELF,
-		ObjectType::Exe32 | ObjectType::Exe64 => &IGNORELIST_EXE,
+		ObjectType::Elf32 | ObjectType::Elf64 => IGNORELIST_ELF.get_or_init(build_elf_ignorelist),
+		ObjectType::Exe32 | ObjectType::Exe64 => IGNORELIST_EXE.get_or_init(build_exe_ignorelist),
 	};
 	builtin_ignore_list.is_match(name)
 }
