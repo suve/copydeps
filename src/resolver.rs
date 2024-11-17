@@ -157,7 +157,7 @@ pub fn resolve_recursively(
 
 		let status = resolve(&entry, obj.type_, settings);
 		if let Status::Resolved(path) = &status {
-			match get_deps(&path) {
+			match get_deps(path) {
 				Ok(mut sub_obj) => {
 					unresolved.append(&mut sub_obj.deps);
 				}

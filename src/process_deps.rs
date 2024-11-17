@@ -16,7 +16,7 @@
  */
 use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf;
+use std::path::Path;
 
 extern crate same_file;
 use same_file::is_same_file;
@@ -35,8 +35,8 @@ enum ProcessingStatus {
 
 fn should_copy(
 	name: &str,
-	source: &PathBuf,
-	destination: &PathBuf,
+	source: &Path,
+	destination: &Path,
 	settings: &Settings,
 ) -> Result<bool, String> {
 	if !destination.exists() {
@@ -53,7 +53,7 @@ fn should_copy(
 		return Ok(false);
 	}
 
-	match is_same_file(source, &destination) {
+	match is_same_file(source, destination) {
 		Ok(true) => {
 			if settings.verbose {
 				println!(
@@ -147,12 +147,12 @@ fn process_deps(
 		successful: 0,
 	};
 
-	let mut sorted_keys = deps.keys().collect::<Vec<&String>>();
+	let mut sorted_keys = deps.keys().map(|v| v.as_str()).collect::<Vec<&str>>();
 	sorted_keys.sort();
 
 	for key in sorted_keys {
-		let val = deps.get(key.as_str()).unwrap();
-		match callback(&key, val, settings) {
+		let val = deps.get(key).unwrap();
+		match callback(key, val, settings) {
 			ProcessingStatus::ResolveError => result.failed_to_resolve += 1,
 			ProcessingStatus::Failed => result.failed_to_copy += 1,
 			_ => result.successful += 1,
